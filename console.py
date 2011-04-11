@@ -13,10 +13,7 @@ logger1 = logging.getLogger('byDBMS')
 
 if len(sys.argv) > 1:
     level_name = sys.argv[1]
-    print level_name
     level = LEVELS.get(level_name, logging.NOTSET)
-    print level_name, logging.NOTSET
-    print level
     logger1.setLevel(logging.DEBUG)
 
     # create file handler which logs even debug messages

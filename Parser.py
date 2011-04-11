@@ -69,6 +69,44 @@ andExp += (notExp & Token("AND") & andExp) | notExp > Node
 exp = Delayed()
 exp += (andExp & Token("OR") & exp) | andExp > Node
 
+# Definicion de columnas para el CREATE
+listaIdentificadores = ~simbolo("(") & (identi & (~simbolo(",") & identi)[:,...]) & ~simbolo(")") > Node
+tipo = Token('INT') | Token('FLOAT') | Token('DATE') | (Token('CHAR') & ~simbolo('(') & number & ~simbolo(')')) > Node
+constraintColumna = ( (Token("PRIMARY") & Token("KEY")) 
+                    | (Token("REFERENCES") & identi & ~simbolo("(") & (identi) & ~simbolo(")"))
+                    | (Token("CHECK") & ~simbolo("(") & (exp) & ~simbolo(")"))
+                    ) > Node
+listConstraintColumna = constraintColumna[:] > Node #TODO
+descColumna = identi & tipo & listConstraintColumna > Node
+descConstraint = ( (Token("PRIMARY") & Token("KEY") & identi & listaIdentificadores)
+                 | (Token("FOREIGN") & Token("KEY") & identi & listaIdentificadores & Token("REFERENCES") & identi & listaIdentificadores)
+                 | (Token("CHECK") & identi & ~simbolo("(") & (exp) & ~simbolo(")"))
+                 ) > Node
+listaDescColumna += (descColumna | descConstraint) & (~simbolo(",") & (descColumna | descConstraint))[:] > Node
+
+# Definicion de acciones para el ALTER
+accion = ( (Token("ADD") & Token("COLUMN") & descColumna)
+         | (Token("ADD") & descConstraint)
+         | (Token("DROP") & Token("COLUMN") & identi)
+         | (Token('DROP') & Token("CONSTRAINT") & identi )
+         ) > Node
+listaAccion += accion & (~txt(',') & accion)[:] > Node
+
+# Definir SQL
+consultaSql = Star(dataBaseCreate 
+                 | dataBaseAlter 
+                 | dataBaseDrop 
+                 | dataBaseShow 
+                 | dataBaseUse 
+                 | tableCreate
+                 | tableAlterName
+                 | tableAlterStructure
+                 | tableDrop
+                 | tableShowAll
+                 | tableShowColumns
+                 ) > SQLQuery
+
+
 # Pruebas para las expresiones
 #~ print null.parse ("NULL")
 #~ print s.parse(" 'hola' ")
@@ -91,54 +129,22 @@ exp += (andExp & Token("OR") & exp) | andExp > Node
 #~ print predExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6  > 3")[0]
 #~ print predExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6  >= 3")[0]
 #~ print notExp.parse("NOT 3")[0]
-print andExp.parse('NOT True AND 3 > 2 AND 2 <= 2')[0]
+#~ print andExp.parse('NOT True AND 3 > 2 AND 2 <= 2')[0]
+#~ print exp.parse('NOT True AND 3 > 2 AND 2 <= 2 OR False')[0]
+#~ 
+#~ q = listaDescColumna.parse("c1 INT , c2 INT PRIMARY KEY REFERENCES cosita (id), c3 FLOAT")
+#~ q = listaDescColumna.parse("PRIMARY KEY clave (c1, c3), FOREIGN KEY claveForanea (c3, c4, c5, c6) REFERENCES cos2 (id, c3,c4,c6)")
+#~ print q
+#~ for i in q:
+    #~ print i 
+#~ 
+#~ print tipo.parse("INT")
+#~ print tipo.parse("CHAR( 34 )")
+#~ print identi.parse(" hola ")
 
-# Definicion de columnas para el CREATE
-listaIdentificadores = ~simbolo("(") & (identi & (~simbolo(",") & identi)[:,...]) & ~simbolo(")") > Node
-tipo = Token('INT') | Token('FLOAT') | Token('DATE') | (Token('CHAR') & ~simbolo('(') & number & ~simbolo(')')) > Node
-constraintColumna = ( (Token("PRIMARY") & Token("KEY")) 
-                    | (Token("REFERENCES") & identi & ~simbolo("(") & (identi) & ~simbolo(")"))
-                    | (Token("CHECK") & ~simbolo("(") & (exp) & ~simbolo(")"))
-                    ) > Node
-descColumna = identi & tipo & constraintColumna[:] > Node
-descConstraint = ( (Token("PRIMARY") & Token("KEY") & identi & listaIdentificadores)
-                 | (Token("FOREIGN") & Token("KEY") & identi & listaIdentificadores & Token("REFERENCES") & identi & listaIdentificadores)
-                 #| (Token("CHECK") & identi & ~simbolo("(") & (exp) & ~simbolo(")"))
-                 ) > Node
-listaDescColumna += (descColumna | descConstraint) & (~simbolo(",") & (descColumna | descConstraint))[:] > Node
-
-"""
-q = listaDescColumna.parse("c1 INT , c2 INT PRIMARY KEY REFERENCES cosita (id), c3 FLOAT")
-q = listaDescColumna.parse("PRIMARY KEY clave (c1, c3), FOREIGN KEY claveForanea (c3, c4, c5, c6) REFERENCES cos2 (id, c3,c4,c6)")
-
-print q
-for i in q:
-    print i 
-"""
-
-# Definicion de acciones para el ALTER
-listaAccion += txt("ADD")
-
-# Definir SQL
-consultaSql = Star(dataBaseCreate 
-                 | dataBaseAlter 
-                 | dataBaseDrop 
-                 | dataBaseShow 
-                 | dataBaseUse 
-                 | tableCreate
-                 | tableAlterName
-                 #| tableAlterStructure
-                 | tableDrop
-                 | tableShowAll
-                 | tableShowColumns
-                 ) > SQLQuery
-
-
-print tipo.parse("INT")
-print tipo.parse("CHAR( 34 )")
-print identi.parse(" hola ")
 s = consultaSql.parse(
-    """CREATE DATABASE cosa 
+    """
+    CREATE DATABASE cosa 
     ALTER DATABASE cosa RENAME TO nuevacosa1 
     ALTER DATABASE nuevacosa1 RENAME TO nuevacosa2
     DROP DATABASE cosa
@@ -153,6 +159,10 @@ s = consultaSql.parse(
         id CHAR (3) PRIMARY KEY
     )
     
+    CREATE TABLE cos3 (
+        id INT PRIMARY KEY
+    )
+    
     CREATE TABLE cosita (
         c1 INT ,
         c2 FLOAT ,
@@ -160,15 +170,31 @@ s = consultaSql.parse(
         c3 CHAR(3),
         PRIMARY KEY clave (c1, c3),
         FOREIGN KEY claveForanea (c3) REFERENCES cos2 (id), 
-        c5 INT CHECK (c5 > 3)
-        
+        c5 INT CHECK (c5 > 3),
+        CHECK cosaGrande (c5 > 4343433)
     )
     
     ALTER TABLE cosita RENAME  TO nuevacosita
+    
+    ALTER TABLE cosita ADD COLUMN df INT
+    ALTER TABLE cosita ADD COLUMN df1 INT PRIMARY KEY
+    ALTER TABLE cosita ADD COLUMN df2 INT REFERENCES cos2 (id)
+    ALTER TABLE cosita ADD COLUMN df3 INT CHECK ( df3 > 3)
+    ALTER TABLE cosita ADD COLUMN df4 INT PRIMARY KEY REFERENCES cos2 (id) CHECK ( df3 > 3)
+    
+    ALTER TABLE cosita ADD PRIMARY KEY key1 (c1)
+    ALTER TABLE cosita ADD FOREIGN KEY claveForanea (c40) REFERENCES cos2 (id)
+    ALTER TABLE cosita ADD CHECK cosaMuyGrande (c4 > 433 AND c3 > 3)
+
+    ALTER TABLE cosita DROP COLUMN c025
+    ALTER TABLE cosita DROP CONSTRAINT cosaMuyGrande
+
+    ALTER TABLE cosita ADD COLUMN df4 INT PRIMARY KEY REFERENCES cos2 (id) CHECK ( df3 > 3), ADD PRIMARY KEY key1 (c1), ADD FOREIGN KEY claveForanea (c40) REFERENCES cos2 (id), ADD CHECK cosaMuyGrande (c4 > 433 AND c3 > 3), DROP COLUMN c025, DROP CONSTRAINT cosaMuyGrande
+
     SHOW TABLES
     SHOW COLUMNS FROM cosita
-    DROP TABLE cosita
     
+    DROP TABLE cosita
     """)[0]
 print s
 
