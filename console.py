@@ -1,48 +1,23 @@
+# Universidad del Valle de Guatemala
+# CC3010 Administracion de la Informacion (Seccion 10)
+# Byron Orlando Morales Sequen (08414)
+# Fecha de creacion: viernes, 7 de abril de 2011
+# console.py
+# Contiene a la consola interactiva
+
+# Importar modulos necesarios
 import logging
 import sys
+import byDBMS
 
-LEVELS = {'-v': logging.DEBUG,
-          'debug': logging.DEBUG,
-          'info': logging.INFO,
-          'warning': logging.WARNING,
-          'error': logging.ERROR,
-          'critical': logging.CRITICAL}
-
-
-logger1 = logging.getLogger('byDBMS')    
-
+# Verificar si se debe activar el modo DEBUG
 if len(sys.argv) > 1:
     level_name = sys.argv[1]
-    level = LEVELS.get(level_name, logging.NOTSET)
-    logger1.setLevel(logging.DEBUG)
+    byDBMS.configure(tipo=level_name)
+else:
+    byDBMS.configure()
 
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler("data.log")
-    fh.setLevel(logging.DEBUG)
-    # create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    ch.setFormatter(formatter)
-    fh.setFormatter(formatter)
-    # add the handlers to logger
-    logger1.addHandler(ch)
-    logger1.addHandler(fh)
+# Crear log de la consola
+log = logging.getLogger('byDBMS.console')    
 
 
-logging.basicConfig(format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    filename='myapp.log',
-                    filemode='w')
-
-logger1.debug('A debug message')
-logger1.info('Some information')
-logger1.warning('A shot across the bows')
-
-logger1.debug('This is a debug message')
-logger1.info('This is an info message')
-logger1.warning('This is a warning message')
-logger1.error('This is an error message')
-logger1.critical('This is a critical error message')
-
-import Parser

@@ -1,3 +1,9 @@
+# Universidad del Valle de Guatemala
+# CC3010 Administracion de la Informacion (Seccion 10)
+# Byron Orlando Morales Sequen (08414)
+# Fecha de creacion: viernes, 7 de abril de 2011
+# AST.py
+# Contiene las clases con las que se genera el arbol sintactico.
 
 from lepl import List, Node 
 import logging
@@ -56,44 +62,3 @@ class TableShowAll(SQLQuery):
 # Mostrar columnas de una tabla
 class TableShowColumns(SQLQuery):
     pass
-
-# ----------------------------------
-# 2.1) DDL para tablas
-# ----------------------------------
-
-
-"""
-class Add(List): pass
-...
->>> class Sub(List): pass
-...
->>> class Mul(List): pass
-...
->>> class Div(List): pass
-...
-
->>> # tokens
->>> value = Token(UnsignedReal())
->>> symbol = Token('[^0-9a-zA-Z \t\r\n]')
-
->>> number = Optional(symbol('-')) + value >> float
->>> group2, group3 = Delayed(), Delayed()
-
->>> # first layer, most tightly grouped, is parens and numbers
-... parens = ~symbol('(') & group3 & ~symbol(')')
->>> group1 = parens | number
-
->>> # second layer, next most tightly grouped, is multiplication
-... mul = group1 & ~symbol('*') & group2 > Mul
->>> div = group1 & ~symbol('/') & group2 > Div
->>> group2 += mul | div | group1
-
->>> # third layer, least tightly grouped, is addition
-... add = group2 & ~symbol('+') & group3 > Add
->>> sub = group2 & ~symbol('-') & group3 > Sub
->>> group3 += add | sub | group2
-
->>> ast = group3.parse('1+2*(3-4)+5/6+7')[0]
-"""
-
-
