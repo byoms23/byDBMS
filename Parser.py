@@ -87,7 +87,7 @@ def build():
                         | (Token("REFERENCES") & identi & ~simbolo("(") & (identi) & ~simbolo(")"))
                         | (Token("CHECK") & ~simbolo("(") & (exp) & ~simbolo(")"))
                         ) > Node
-    listConstraintColumna = constraintColumna[:] > Node #TODO
+    listConstraintColumna = constraintColumna[:] > Node 
     descColumna = identi & tipo & listConstraintColumna > Node
     descConstraint = ( (Token("PRIMARY") & Token("KEY") & identi & listaIdentificadores)
                      | (Token("FOREIGN") & Token("KEY") & identi & listaIdentificadores & Token("REFERENCES") & identi & listaIdentificadores)

@@ -39,7 +39,74 @@ Cualquier otro texto ingresado será tratado como un comando SQL (ver 'instrucci
 # instrucciones: Devuelve 
 def instrucciones():
     return """
-    """
+¡Bienvenido a byDBMS 0.1!
+
+A continuacion se muestra la lista de instrucciones SQL aceptadas por byDBMS:
+ =====================
+ = Para bases de datos
+ =====================
+ * Crear base de datos
+    CREATE DATABASE <idDB> [;]
+ * Cambiar nombre de una base de datos
+    ALTER DATABASE <idDB> RENAME TO <nuevoIdDB> [;]
+ * Eliminar una base datos
+    DROP DATABASE <idDB> [;]
+ * Mostrar bases de datos
+    SHOW DATABASES [;]
+ * Seleccionar una base de datos
+    USE DATABASE <idDB> [;]
+    
+ Donde <idDB> y <nuevoIdDB> son identificadores.
+ =========================
+ = Para tablas (entidades)
+ =========================
+ * Crear tabla
+    CREATE TABLE <idTabla> ( <listaDescColumna> ) [;]
+ * Modificar una tabla
+    + Renombrar una tabla
+        ALTER TABLE <idTabla> RENAME TO <nuevoIdTabla> [;] 
+    + Agregar una columna
+        ALTER TABLE <idTabla> ADD COLUMN <descColumna> [;] 
+    + Agregar una restricción (constraint)
+        ALTER TABLE <idTabla> ADD <descConstraint> [;] 
+    + Eliminar una columna
+        ALTER TABLE <idTabla> DROP COLUMN <idColumna> [;]
+    + Eliminar una restricción (constraint)
+        ALTER TABLE <idTabla> DROP CONSTRAINT <idConstraint> [;]
+ * Eliminar una tabla
+    DROP TABLE <idTabla> [;]
+ * Obtener informacion de tablas
+    + Mostrar tablas existentes
+        SHOW TABLES [;]
+    + Mostrar columnas de una tabla
+        SHOW COLUMNS FROM <idTabla> [;]
+        
+ Donde 
+ * <listaDescColumna> es
+      <descColumnaConstraint> <descColumnaConstraintComa>*
+        + <descColumnaConstraintComa> es
+            , <descColumnaConstraint>
+        + <descColumnaConstraint> es
+            <descColumna> | <descConstraint>
+ * <tipo> es
+    INT | FLOAT | DATE | CHAR ( <cantidad> )
+        + <cantidad> es un numero entero positivo.
+ * <descColumna> es
+    <idColumna> <tipo> <constraintCorto>*
+ * <constraintCorto> es
+    PRIMARY KEY | REFERENCES <idTablaReferencia> ( <idColumnaReferencia> ) | CHECK ( <exp> )
+ * <descConstraint> es
+    PRIMARY KEY <idConstraint> ( <listaIdent> )
+    | FOREIGN KEY <idConstraint> REFERENCES <idTablaReferencia> ( <idColumnaReferencia> ) 
+    | CHECK <idConstraint> ( <exp> )
+ * <idTabla>, <nuevoIdTabla>, <idColumna>, <idConstraint>, <idTablaReferencia>, <idColumnaReferencia> son identificadores
+ * <exp> es una expresión booleana.
+ * <listaIdent> es una lista de identificadores seprados por comas.
+
+Por el momento las instrucciones son case sensitive, por lo que deben estar escritas en mayúsculas (de lo contrario no serán instrucciones válidas). 
+
+Cualquier texto ingresado no válido se mostrará un error.
+"""
 
 # Crear variable de entrada
 entrada = ''
