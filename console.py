@@ -27,6 +27,13 @@ def ayuda():
     return """
 ¡Bienvenido a byDBMS 0.1!
 
+Esta es la consola interactiva del manejador de bases de datos byDBMS. La consola interactiva puede ser activada en uno de varios niveles de ejecución, cuando se invoca a la consola (mediante python console.py) se le puede agregar una de las siguientes opciones: 
+ *    debug     muestra hasta mensajes internos de depuración.
+ * -v info      muestra hasta mensajes internos de información.
+ *    warning   muestra hasta mensajes de advertencia (activado por defecto).
+ *    error     muestra hasta mensajes de error.
+ *    critical  muestra sólo mensajes críticos, causantes de errores de ejecución del gestor.
+
 A continuacion se muestra la lista de instrucciones aceptadas por la consola:
  * leer <archivo> - Abre el archivo especificado en <archivo> e intenta ejecutar los comandos SQL que se encuentren en él.
  * ayuda          - Muestra este mensaje de ayuda.

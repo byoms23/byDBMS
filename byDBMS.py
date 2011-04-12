@@ -56,7 +56,7 @@ def configure(tipo="info"):
         log.warning("Archivo de configuracion byDBMS.conf no existe.")
         
 # Configura el logger segun el nivel indicado por nivel_name.
-def configLogger(tipo, archivo=None):
+def configLogger(tipo='warning', archivo=None):
     # Traer el log
     global log
     
