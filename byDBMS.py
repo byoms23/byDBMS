@@ -84,12 +84,13 @@ def configLogger(tipo='warning', archivo=None):
     # Crear el handler para la consola con el nivel ingresado
     ch = logging.StreamHandler()
     ch.setLevel(level)
-    # create formatter and add it to the handlers
+    # Establecer formatos predeterminados para el archivo de log y la consola
     formatter = logging.Formatter("%(asctime)s - %(name)s \n%(levelname)s - %(message)s")
     formatter2 = logging.Formatter("\n%(levelname)s: %(message)s")
     fh.setFormatter(formatter)
     ch.setFormatter(formatter2)
-    # add the handlers to logger
+    
+    # Agregar handlers al logger
     log.addHandler(ch)
     log.addHandler(fh)
 
@@ -102,7 +103,7 @@ def configLogger(tipo='warning', archivo=None):
 def execute(string):
     pass
     
-def executeFromFile(file):
+def executeFromFile(archivo):
     pass
 
 # Definir variables de modulo

@@ -33,6 +33,11 @@ Esta es la consola interactiva del manejador de bases de datos byDBMS. La consol
  *    warning   muestra hasta mensajes de advertencia (activado por defecto).
  *    error     muestra hasta mensajes de error.
  *    critical  muestra sólo mensajes críticos, causantes de errores de ejecución del gestor.
+Sin importar el nivel de ejecución activo, el gestor guarda toda la información hasta el nivel de depuración en un archivo de log (especificado en el archivo de configuración, ver abajo). 
+
+Para el correcto funcionamiento del gestor se utiliza un archivo de configuración (byDBMS.conf), contiene la información necesaria para la configuración inicial del gestor. El archivo de configuración debe contener las siguientes variables:
+ * path     Contiene el path donde se encuentra el punto inicial de las bases de datos, la carpeta donde se encuentra el archivo maestro de metadata de las bases de datos y las mismas bases de datos que utilizará el gestor.
+ * logFile  Indica el path al archivo en el cual se desea que se guarde el log generado por el gestor.
 
 A continuacion se muestra la lista de instrucciones aceptadas por la consola:
  * leer <archivo> - Abre el archivo especificado en <archivo> e intenta ejecutar los comandos SQL que se encuentren en él.
