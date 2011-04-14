@@ -59,7 +59,7 @@ def configure(tipo="info"):
                 # Crear manejador
                 manejador = ManejadorBaseDatos(mbdPath=path)
                 # Configurar manejador
-                manejador.load()
+                manejador.cargar()
         else:
             log.warning("El path especificado para iniciar no existe, se ha creado el nuevo directorio.")
             os.makedirs(path)
@@ -120,11 +120,14 @@ def verificacion(ast):
     # Verificar el tipo del nodo del árbol
     log.debug ('Procesando árbol: \n' + str(ast))
     
+    # Definir variables
+    r = None
+    
     # Revisar cuando es un conjunto de consultas sql
     if type(ast) == SQLQuery:
         log.debug('Se detectó un conjunto de consultas SQL.')
         for nodo in ast:
-            r = verificacion(nodo)
+            verificacion(nodo)
     
     # Verificar cuando es una instrucción de creación de base de datos
     elif type(ast) == DataBaseCreate:
@@ -134,9 +137,25 @@ def verificacion(ast):
     # Verificar cuando se renombra una base de datos
     elif type(ast) == DataBaseAlter:
         log.debug('Se detectó una consulta SQL: Cambiar nombre de base de datos.')
+        manejador.renombrar_base_de_datos(ast[0].lower(), ast[1].lower())
         
+    # Verificar cuando se borra una base de datos
+    elif type(ast) == DataBaseDrop:
+        log.debug('Se detectó una consulta SQL: Eliminar base de datos.')
+        manejador.eliminar_base_de_datos(ast[0].lower())
         
-    # Verificar cuando 
+    # Verificar cuando es mostrar bases de datos
+    elif type(ast) == DataBaseShow:
+        log.debug('Se detectó una consulta SQL: Mostrar bases de datos.')
+        r = manejador.mostrar_bases_de_datos()
+    
+    # Verificar cuando es utilizar base de datos
+    elif type(ast) == DataBase:
+        log.debug('Se detectó una consulta SQL: Utilizar base de datos.')
+        manejador.utilizar_base_de_datos(ast[0].lower())
+
+    # Devolver el resultado
+    return r
 
 # ejecutar: Ejecuta las instrucciones SQL especificadas en 'cadena'. 
 # Devuelve el resultado de ejecutar las instrucciones dadas, como texto.
@@ -156,12 +175,16 @@ def ejecutar(cadena):
         
         # Verificar instrucciones (análisis semántico)
         log.debug('Inicio análisis semántico.')
-        verificacion(ast)
+        r = verificacion(ast)
+        r = r if r else ''
         log.debug('Fin análisis semántico.')
     except lepl.stream.maxdepth.FullFirstMatchException, msg:
         log.debug('Fin análisis léxico y sintáctico.')
         r = msg
     except DataBaseAlreadyExistException, msg:
+        r = msg
+        log.debug('Fin análisis semántico.')
+    except DataBaseNotExistException, msg:
         r = msg
         log.debug('Fin análisis semántico.')
     
@@ -205,6 +228,5 @@ def ejecutarDesdeArchivo(archivo):
 # Definir variables de modulo
 parser = Parser.build()
 log = logging.getLogger('byDBMS')
-path = "./"
-dbActual = None
+path = "./data/"
 manejador = None

@@ -10,6 +10,7 @@
 import logging
 import os
 from Excepciones import *
+from Resultados import *
 
 # Clase que administra la información de las bases de datos creadas
 class ManejadorBaseDatos():
@@ -24,9 +25,10 @@ class ManejadorBaseDatos():
         self.path = mbdPath + '/'
         self.schema_file_name=self.path + 'bd.schema'
         self.bases_de_datos = []
+        self.base_de_datos_actual = None
         
     # Cargar configuración desde el archivo asignado al manejador
-    def load(self):
+    def cargar(self):
         # Abrir archivo de metadatos
         try:
             arch = open(self.schema_file_name)
@@ -50,7 +52,7 @@ class ManejadorBaseDatos():
         arch.close()
         
     # Guarda la configuración actual de la base en el archivo designado para este manejador
-    def save(self):
+    def salvar(self):
         # Abrir archivo de metadatos
         arch = open(self.filename, 'a')
         
@@ -102,6 +104,23 @@ class ManejadorBaseDatos():
         
         # Mostrar mensaje de éxito
         self.log.info('Base de datos \''+db+'\' creada.')
+        
+    # Cambia el nombre de la base de datos especificada por dbAntigua por dbNueva
+    def renombrar_base_de_datos(self, dbAntigua, dbNueva):
+        pass # TODO
+        
+    # 
+    def eliminar_base_de_datos(self, db):
+        pass # TODO
+    
+    # 
+    def mostrar_bases_de_datos(self):
+        pass # TODO
+    
+    #     
+    def utilizar_base_de_datos(self, db):
+        pass # TODO
+
         
 class BaseDeDatos():
     # Contructor
