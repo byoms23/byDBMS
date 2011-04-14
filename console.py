@@ -40,10 +40,10 @@ Para el correcto funcionamiento del gestor se utiliza un archivo de configuraci�
  * logFile  Indica el path al archivo en el cual se desea que se guarde el log generado por el gestor.
 
 A continuacion se muestra la lista de instrucciones aceptadas por la consola:
- * leer <archivo> - Abre el archivo especificado en <archivo> e intenta ejecutar los comandos SQL que se encuentren en él.
- * ayuda          - Muestra este mensaje de ayuda.
- * instrucciones  - Muestra el conjunto de instrucciones SQL que son reconocidas por byDBMS.
- * salir          - Abandona byDBMS de forma segura.
+ * cargar <archivo> - Abre el archivo especificado en <archivo> e intenta ejecutar los comandos SQL que se encuentren en él.
+ * ayuda            - Muestra este mensaje de ayuda.
+ * instrucciones    - Muestra el conjunto de instrucciones SQL que son reconocidas por byDBMS.
+ * salir            - Abandona byDBMS de forma segura.
 
 Cualquier otro texto ingresado será tratado como un comando SQL (ver 'instrucciones' para ver el conjunto de comandos SQL reconocidos).
 """
@@ -154,7 +154,7 @@ while entrada.lower() != 'salir':
         print instrucciones()
     elif entrada.lower() == 'salir':
         print "¡¡¡ Adios !!!"
-    elif entrada.lower().startswith('leer '):
-        print byDBMS.executeFromFile(entrada[5:].strip())
+    elif entrada.lower().startswith('cargar '):
+        print byDBMS.ejecutarDesdeArchivo(entrada[7:].strip())
     else:
-        print byDBMS.execute(entrada)
+        print byDBMS.ejecutar(entrada)

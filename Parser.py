@@ -209,10 +209,4 @@ def build():
         #~ 
         #~ DROP TABLE cosita
         #~ """)[0]
-    #~ print s
-    #~ 
-    #~ # Abrir el archivo enviado
-    #~ with open('myfile') as input:
-        #~ return matcher.parse_file(input)
-
-
+    #~ print s 

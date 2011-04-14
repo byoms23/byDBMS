@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Universidad del Valle de Guatemala
 # CC3010 Administracion de la Informacion (Seccion 10)
 # Byron Orlando Morales Sequen (08414)
@@ -5,15 +6,20 @@
 # byDBMS.py
 # Contiene el core del manejador de datos
 
-# Importar modulos
+# Importar modulos, funciones y clases
 import logging
 import sys, os
 import Parser
+import lepl
+from lepl import Node
+from AST import *
+from Manejador import ManejadorBaseDatos
+from Excepciones import *
 
 # Carga la configuracion inicial del modulo
 def configure(tipo="info"):
     # Variables del modulo
-    global path, log
+    global path, log, manejador
     
     # Configurar el log
     configLogger(tipo)
@@ -33,6 +39,7 @@ def configure(tipo="info"):
                # Extraer el valor
                tempList = line.split("=")
                dic[tempList[0].strip()] = tempList[1].strip()
+        f.close()
         
         # Buscar path
         try:
@@ -45,8 +52,16 @@ def configure(tipo="info"):
         if os.path.exists(path):
             if not os.path.isdir(path):
                 log.error("El path especificado no es un directorio.")
+                
+                # TODO Crear excepciones para esto
+                
+            else:
+                # Crear manejador
+                manejador = ManejadorBaseDatos(mbdPath=path)
+                # Configurar manejador
+                manejador.load()
         else:
-            log.warning("El path especificado no existe, se ha creado el nuevo directorio.")
+            log.warning("El path especificado para iniciar no existe, se ha creado el nuevo directorio.")
             os.makedirs(path)
         
         
@@ -100,14 +115,96 @@ def configLogger(tipo='warning', archivo=None):
     #~ log.error('This is an error message')
     #~ log.critical('This is a critical error message')
 
-def execute(string):
-    pass
+# Recorre el AST, realiza el análisis semántico
+def verificacion(ast):
+    # Verificar el tipo del nodo del árbol
+    log.debug ('Procesando árbol: \n' + str(ast))
     
-def executeFromFile(archivo):
-    pass
+    # Revisar cuando es un conjunto de consultas sql
+    if type(ast) == SQLQuery:
+        log.debug('Se detectó un conjunto de consultas SQL.')
+        for nodo in ast:
+            r = verificacion(nodo)
+    
+    # Verificar cuando es una instrucción de creación de base de datos
+    elif type(ast) == DataBaseCreate:
+        log.debug('Se detectó una consulta SQL: Crear base de datos.')
+        manejador.agregar_base_de_datos(ast[0].lower())
+    
+    # Verificar cuando se renombra una base de datos
+    elif type(ast) == DataBaseAlter:
+        log.debug('Se detectó una consulta SQL: Cambiar nombre de base de datos.')
+        
+        
+    # Verificar cuando 
+
+# ejecutar: Ejecuta las instrucciones SQL especificadas en 'cadena'. 
+# Devuelve el resultado de ejecutar las instrucciones dadas, como texto.
+def ejecutar(cadena):
+    # Traer variables de modulo
+    global parser
+    
+    # Crear variables
+    r = ''
+    
+    # Análisis de la cadena enviada
+    try:
+        # Analizar cadena enviada (análisis léxico y sintáctico)
+        log.debug('Inicio análisis léxico y sintáctico.')
+        ast = parser.parse(cadena)[0]
+        log.debug('Fin análisis léxico y sintáctico.')
+        
+        # Verificar instrucciones (análisis semántico)
+        log.debug('Inicio análisis semántico.')
+        verificacion(ast)
+        log.debug('Fin análisis semántico.')
+    except lepl.stream.maxdepth.FullFirstMatchException, msg:
+        log.debug('Fin análisis léxico y sintáctico.')
+        r = msg
+    except DataBaseAlreadyExistException, msg:
+        r = msg
+        log.debug('Fin análisis semántico.')
+    
+    # Devolver resultado de la ejecución
+    return r
+    
+def ejecutarDesdeArchivo(archivo):
+    # Traer variables de modulo
+    global parser, log
+    
+    # Crear variables
+    r = ''
+    
+    # Abrir el archivo enviado y parsearlo (análisis léxico y sintáctico)
+    log.debug('Inicio análisis léxico y sintáctico.')
+    ast = Node()
+    try:
+        with open(archivo) as entrada:
+            print parser.get_parse_file()
+            if parser is lepl.matchers.transform.Transform:
+                print "lepl.matchers.transform.Transform"
+            #~ print parser.parse_file
+            #~ ast = parser.parse_file(entrada)
+        ast = parser.parse_file(open(archivo))
+    except IOError, msg:
+        r = "El archivo '"+archivo+"' no existe o no es un archivo valido."
+    except lepl.stream.maxdepth.FullFirstMatchException, msg:
+        r = msg
+        log.debug('Fin análisis léxico y sintáctico.')
+    except DataBaseAlreadyExistException, msg:
+        r = msg
+    
+    # Verificar instrucciones (análisis semántico)
+    log.debug('Inicio análisis semántico.')
+    verificacion(ast)
+    log.debug('Fin análisis semántico.')
+    
+    # Devolver resultado de la operación
+    return r
 
 # Definir variables de modulo
 parser = Parser.build()
 log = logging.getLogger('byDBMS')
 path = "./"
 dbActual = None
+manejador = None

@@ -3,6 +3,12 @@ CC3010 Administracion de la informacion (Seccion 10)
 Byron Orlando Morales Sequen (08414)
 README.txt
 
+======
+byDBMS
+======
+
+
+
 --------------
 Requerimientos
 --------------
@@ -12,10 +18,16 @@ Requerimientos
 
 * LEPL >= 5.0
   - byDBMS utiliza LEPL para el analisis sintactico de las consultas realizadas.
-  
-==========
+
+-----------------
+¿Como utilizarlo?
+-----------------
+
+https://github.com/byoms23/byDBMS
+
+----------
 console.py
-==========
+----------
 
 Contiene la consola interactiva necesaria para interactuar con el manejador de base de datos.
 
