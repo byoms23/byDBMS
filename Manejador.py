@@ -113,14 +113,41 @@ class ManejadorBaseDatos():
     def eliminar_base_de_datos(self, db):
         pass # TODO
     
-    # 
+    # Crea el resultado de la información que es presentada
     def mostrar_bases_de_datos(self):
-        pass # TODO
+        self.log.debug('Mostrar bases de datos.')
+        # Declarar variables
+        resp = Resultado()
+        
+        # Agregar titulos
+        resp.addTitulo('Base de datos')
+        resp.addTitulo('Cantidad tablas')
+        
+        # Agregar cada una de las bases de datos
+        for db in self.bases_de_datos:
+            resp.addContenido([db.getNombre(), db.getCantidadTablas()])
+            
+        # Regresar respuesta
+        return resp
     
-    #     
+    # Cambia la base de datos actual
     def utilizar_base_de_datos(self, db):
-        pass # TODO
-
+        # Declarar variables
+        temp = BaseDeDatos(db, self.path, 0)
+        
+        # Buscar la nueva base de datos
+        if temp in self.bases_de_datos:
+        
+            # Guardar y cargar nueva base de datos actual
+            self.base_de_datos_actual = self.bases_de_datos[self.bases_de_datos.index(temp)]
+            self.cargar()
+            
+            # Guardar mensaje de éxito
+            self.log.info('Base de datos \''+db+'\' en uso.')
+        else:
+            # Guardar mensaje de éxito
+            self.log.error('Base de datos \''+db+'\' no existe.')
+            raise DataBaseNotExistException(db)
         
 class BaseDeDatos():
     # Contructor
@@ -139,6 +166,18 @@ class BaseDeDatos():
         else:
             return False
     
+    # Obtener el nombre de la base de datos
+    def getNombre(self):
+        return self.nombre
+        
+    # Cambair el nombre de la base de datos
+    def setNombre(self, nombre):
+        self.nombre = nombre
+    
+    # Obtener la cantidad de tablas de la base de datos
+    def getCantidadTablas(self):
+        return self.cantTablas
+        
     # Convertir a texto. 
     def forSave(self):
         # Declarar variables
@@ -149,6 +188,10 @@ class BaseDeDatos():
         
         # Devolver la cadena de respuesta
         return r
+        
+    # Carga la base de datos actual desde el archivo de metadados de la bd
+    def cargar(self): 
+        pass # TODO
     
 class Tabla():
     # Contructor

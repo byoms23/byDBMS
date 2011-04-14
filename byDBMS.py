@@ -80,7 +80,7 @@ def configLogger(tipo='warning', archivo=None):
         archivo = 'byDBMS.log'
     
     # Crear diccionario de niveles
-    LEVELS = {'-v': logging.DEBUG,
+    LEVELS = {'-v': logging.INFO,
               'debug': logging.DEBUG,
               'info': logging.INFO,
               'warning': logging.WARNING,
@@ -127,7 +127,7 @@ def verificacion(ast):
     if type(ast) == SQLQuery:
         log.debug('Se detectó un conjunto de consultas SQL.')
         for nodo in ast:
-            verificacion(nodo)
+            r = verificacion(nodo)
     
     # Verificar cuando es una instrucción de creación de base de datos
     elif type(ast) == DataBaseCreate:
@@ -148,9 +148,10 @@ def verificacion(ast):
     elif type(ast) == DataBaseShow:
         log.debug('Se detectó una consulta SQL: Mostrar bases de datos.')
         r = manejador.mostrar_bases_de_datos()
+        #~ log.debug(r)
     
     # Verificar cuando es utilizar base de datos
-    elif type(ast) == DataBase:
+    elif type(ast) == DataBaseUse:
         log.debug('Se detectó una consulta SQL: Utilizar base de datos.')
         manejador.utilizar_base_de_datos(ast[0].lower())
 
@@ -176,7 +177,7 @@ def ejecutar(cadena):
         # Verificar instrucciones (análisis semántico)
         log.debug('Inicio análisis semántico.')
         r = verificacion(ast)
-        r = r if r else ''
+        r = '' if r == None else str(r)
         log.debug('Fin análisis semántico.')
     except lepl.stream.maxdepth.FullFirstMatchException, msg:
         log.debug('Fin análisis léxico y sintáctico.')
@@ -203,11 +204,11 @@ def ejecutarDesdeArchivo(archivo):
     ast = Node()
     try:
         with open(archivo) as entrada:
-            print parser.get_parse_file()
-            if parser is lepl.matchers.transform.Transform:
-                print "lepl.matchers.transform.Transform"
+            #~ parser.get_parse_file()
+            #~ if parser is lepl.matchers.transform.Transform:
+                #~ print "lepl.matchers.transform.Transform"
             #~ print parser.parse_file
-            #~ ast = parser.parse_file(entrada)
+            ast = parser.parse_file(entrada)
         ast = parser.parse_file(open(archivo))
     except IOError, msg:
         r = "El archivo '"+archivo+"' no existe o no es un archivo valido."

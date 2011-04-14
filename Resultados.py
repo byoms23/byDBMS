@@ -25,13 +25,15 @@ class Resultado():
         for x in self.titulos:
             r += x + '\t|\t'
             
-        r = '='*len(r) + '\n' + r[:-3] + '\n' + '='*len(r) + '\n'
+        tam = len(r)
+        r = '='* tam + '\n' + r[:-3] + '\n' + '='*tam + '\n'
         
         # Recorrer contenido
         for f in self.contenido:
             for c in f:
-                r += c + '\t|\t'
+                r += str(c) + '\t|\t'
             r = r[:-3] + '\n'
+        r += '='*tam + '\n'
         
         # Devolver valor calculado
         return r
@@ -45,6 +47,10 @@ class Resultado():
     def getTitulos(self):
         # Devolver los títulos
         return self.titutlos
+        
+    # Agregar un título
+    def addTitulo(self, titulo):
+        self.titulos.append(titulo)
     
     # Modificar el contenido
     def setContenido(self, newContent):
@@ -55,6 +61,11 @@ class Resultado():
     def getContenido(self):
         # Devolver el contenido
         return self.contenido
+        
+    # Agregar una linea de contenido
+    def addContenido(self, contenido):
+        # Agregar contenido nuevo
+        self.contenido.append(contenido)
 
 #~ x = Resultado()
 #~ x.setTitulos(["Titulo1", "Titulo 2"])
