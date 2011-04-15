@@ -121,13 +121,15 @@ def verificacion(ast):
     log.debug ('Procesando árbol: \n' + str(ast))
     
     # Definir variables
-    r = None
+    r = ''
     
     # Revisar cuando es un conjunto de consultas sql
     if type(ast) == SQLQuery:
         log.debug('Se detectó un conjunto de consultas SQL.')
         for nodo in ast:
-            r = verificacion(nodo)
+            res = verificacion(nodo)
+            if res != None:
+                r += (r + '\n' if len(r) > 0 else '') + str(res)
     
     # Verificar cuando es una instrucción de creación de base de datos
     elif type(ast) == DataBaseCreate:
@@ -155,6 +157,36 @@ def verificacion(ast):
         log.debug('Se detectó una consulta SQL: Utilizar base de datos.')
         manejador.utilizar_base_de_datos(ast[0].lower())
 
+    # Verificar cuando es crear tabla
+    elif type(ast) == TableCreate:
+        log.debug('Se detectó una consulta SQL: Crear tabla.')
+        manejador.agregar_tabla(ast[0].lower(), ast[1])
+        
+    # Verificar cuando es renombrar tabla
+    elif type(ast) == TableAlterName:
+        log.debug('Se detectó una consulta SQL: Renombrar tabla.')
+        manejador.renombrar_tabla(ast[0].lower(), ast[1].lower())
+    
+    # Verificar cuando es alter estructura de una tabla
+    elif type(ast) == TableAlterStructure:
+        log.debug('Se detectó una consulta SQL: Alterar estructura de una tabla.')
+        manejador.alterar_estructura_de_tabla(ast[0].lower(), ast[1])
+    
+    # Verificar cuando es eliminar tabla
+    elif type(ast) == TableDrop:
+        log.debug('Se detectó una consulta SQL: Eliminar tabla.')
+        manejador.eliminar_tabla(ast[0].lower())
+    
+    # Verificar cuando es mostrar tablas
+    elif type(ast) == TableShowAll:
+        log.debug('Se detectó una consulta SQL: Mostrar tablas.')
+        r = manejador.mostrar_tablas()
+    
+    # Verificar cuando es mostrar columnas de una tabla
+    elif type(ast) == TableShowColumns:
+        log.debug('Se detectó una consulta SQL: Mostrar columnas de una tabla.')
+        r = manejador.mostrar_columnas_de_tabla(ast[0].lower())
+    
     # Devolver el resultado
     return r
 
@@ -188,6 +220,12 @@ def ejecutar(cadena):
     except DataBaseNotExistException, msg:
         r = msg
         log.debug('Fin análisis semántico.')
+    except DataBaseNotSelectedException, msg:
+        r = msg
+        log.debug('Fin análisis semántico.')
+    except TableNotExistException, msg:
+        r = msg
+        log.debug('Fin análisis semántico.')
     
     # Devolver resultado de la ejecución
     return r
@@ -217,6 +255,7 @@ def ejecutarDesdeArchivo(archivo):
         log.debug('Fin análisis léxico y sintáctico.')
     except DataBaseAlreadyExistException, msg:
         r = msg
+    
     
     # Verificar instrucciones (análisis semántico)
     log.debug('Inicio análisis semántico.')

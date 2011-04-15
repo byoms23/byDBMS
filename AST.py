@@ -65,7 +65,15 @@ class TableShowColumns(SQLQuery):
     pass
 
 # --------------------------------------
-# 2.1) Clases para expresiones booleanas
+# 2.1) Clases para tipos de columnas
+# --------------------------------------
+# Representa una descripcion de columna
+class Columna(Node) : pass
+# Representa una descripcion de constraint
+class Restriccion(Node) : pass
+
+# --------------------------------------
+# 2.2) Clases para expresiones booleanas
 # --------------------------------------
 # Representa un valor aceptado
 class Valor(Node) : pass

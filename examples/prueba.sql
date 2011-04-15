@@ -1,5 +1,5 @@
 
-CREATE DATABASE cosa 
+    CREATE DATABASE cosa 
     ALTER DATABASE cosa RENAME TO nuevacosa1 
     ALTER DATABASE nuevacosa1 RENAME TO nuevacosa2
     DROP DATABASE cosa

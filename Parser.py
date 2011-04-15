@@ -99,11 +99,11 @@ def build():
                         | (Token("CHECK") & ~simbolo("(") & (exp) & ~simbolo(")"))
                         ) > Node
     listConstraintColumna = constraintColumna[:] > Node 
-    descColumna = identi & tipo & listConstraintColumna > Node
+    descColumna = identi & tipo & listConstraintColumna > Columna
     descConstraint = ( (Token("PRIMARY") & Token("KEY") & identi & listaIdentificadores)
                      | (Token("FOREIGN") & Token("KEY") & identi & listaIdentificadores & Token("REFERENCES") & identi & listaIdentificadores)
                      | (Token("CHECK") & identi & ~simbolo("(") & (exp) & ~simbolo(")"))
-                     ) > Node
+                     ) > Restriccion
     listaDescColumna += (descColumna | descConstraint) & (~simbolo(",") & (descColumna | descConstraint))[:] > Node
 
     # Definicion de acciones para el ALTER

@@ -13,7 +13,6 @@ class Resultado():
         # Crear variables
         self.titulos = []
         self.contenido = [[]]
-        print "hola"
     
     # Definición de la forma de cadena del objeto
     def __str__(self):

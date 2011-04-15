@@ -7,8 +7,7 @@
 # Contine la información de los manejadores (tablas de símbolos) para las bases de datos y para las tablas.
 
 # Importar modulos
-import logging
-import os, shutil
+import logging, os, shutil, copy, AST
 from Excepciones import *
 from Resultados import *
 
@@ -48,7 +47,7 @@ class ManejadorBaseDatos():
                tempList = line.split("=")
                
                # Cargar nueva base de datos
-               self.bases_de_datos.append(BaseDeDatos(tempList[0].strip(), self.path, int( tempList[1].strip())))
+               self.bases_de_datos.append(BaseDeDatos(self, tempList[0].strip(), self.path, int( tempList[1].strip())))
         arch.close()
         
     # Guarda la configuración actual de la base en el archivo designado para este manejador
@@ -70,13 +69,13 @@ class ManejadorBaseDatos():
                 
                 # Cargar nueva base de datos
                 self.bases_de_datos.append(
-                    BaseDeDatos(tempList[0].strip(), self.path, int( tempList[1].strip())))
+                    BaseDeDatos(self, tempList[0].strip(), self.path, int( tempList[1].strip())))
         arch.close()
         
     # Agrega la base de datos especificada en db.
     def agregar_base_de_datos(self, db):
         # Definir archivo
-        dbo = BaseDeDatos(db, self.path, 0)
+        dbo = BaseDeDatos(self, db, self.path, 0)
         
         # Revisar si la base de datos ya existe
         if dbo in self.bases_de_datos:
@@ -108,8 +107,8 @@ class ManejadorBaseDatos():
     # Cambia el nombre de la base de datos especificada por dbAntigua por dbNueva
     def renombrar_base_de_datos(self, dbAntigua, dbNueva):
         # Definir Base de datos
-        dboAnt = BaseDeDatos(dbAntigua, self.path, 0)
-        dboNue = BaseDeDatos(dbNueva,   self.path, 0)
+        dboAnt = BaseDeDatos(self, dbAntigua, self.path, 0)
+        dboNue = BaseDeDatos(self, dbNueva,   self.path, 0)
         
         # Revisar que no se renombre al mismo nombre de la base de datos
         if dbAntigua == dbNueva:
@@ -157,7 +156,7 @@ class ManejadorBaseDatos():
     # Elimina la base de datos seleccionada en db
     def eliminar_base_de_datos(self, db):
         # Definir Base de datos
-        dbo = BaseDeDatos(db, self.path, 0)
+        dbo = BaseDeDatos(self, db, self.path, 0)
         
         # Revisar si la base de datos ya existe
         if not dbo in self.bases_de_datos:
@@ -210,14 +209,14 @@ class ManejadorBaseDatos():
     # Cambia la base de datos actual
     def utilizar_base_de_datos(self, db):
         # Declarar variables
-        temp = BaseDeDatos(db, self.path, 0)
+        temp = BaseDeDatos(self, db, self.path, 0)
         
         # Buscar la nueva base de datos
         if temp in self.bases_de_datos:
         
             # Guardar y cargar nueva base de datos actual
             self.base_de_datos_actual = self.bases_de_datos[self.bases_de_datos.index(temp)]
-            self.cargar()
+            self.base_de_datos_actual.cargar()
             
             # Guardar mensaje de éxito
             self.log.info('Base de datos \''+db+'\' en uso.')
@@ -225,14 +224,97 @@ class ManejadorBaseDatos():
             # Guardar mensaje de éxito
             self.log.error('Base de datos \''+db+'\' no existe.')
             raise DataBaseNotExistException(db)
+    
+    # Cambiar la cantidad de tablas en el archivo de metadatos    
+    def actualizar_base_de_datos(self, db):
+        
+        # Actualizar cantidad de tablas de la base de datos en el registro
+        with open(self.schema_file_name) as esquema:
+            dataBases = esquema.readlines()
+        
+        # Revisar cada base de datos almacenada
+        self.log.debug("Antes: \n" + str(dataBases))
+        for temp in dataBases:
+            # Buscar base de datos
+            try:
+                t = temp.split('=')
+                if t[0].strip() == db.getNombre():
+                    dataBases.remove(temp)
+                    dataBases.append(db.getNombre() + ' = ' + str(db.getCantidadTablas()) + '\n')
+                    break
+            except:
+                pass
+        
+        # Guardar en el archivo de metadatos
+        self.log.debug("Después: \n" + str(dataBases))
+        with open(self.schema_file_name, 'w') as esquema:
+            esquema.writelines(dataBases)
+    
+    # Verificar si hay una base de datos en uso actualmente, arroja una excepción si no existe
+    def verificar_base_de_datos_en_uso(self):
+        # Vericar base de datos actual
+        if self.base_de_datos_actual == None:
+            self.log.error('No hay base de datos en uso.')
+            raise DataBaseNotSelectedException()
+        
+    
+    # Crea una nueva tabla en la base de datos actual
+    def agregar_tabla(self, tabla, listaDescripciones):
+        # Vericar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Agregar tabla a la base de datos actual
+        self.base_de_datos_actual.agregar_tabla(tabla, listaDescripciones)
+        
+    # Cambiar el nombre de la tabla descrita en idAntiguo por idNuevo.
+    def renombrar_tabla(self, idAntiguo, idNuevo):
+        # Vericar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Renombrar tabla de la base de datos actual
+        self.base_de_datos_actual.renombrar_tabla(idAntiguo, idNuevo)
+        
+    # Aplica el conjunto de acciones de listaAcciones a tabla.
+    def alterar_estructura_de_tabla(self, tabla, listaAcciones):
+        # Vericar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Renombrar tabla de la base de datos actual
+        self.base_de_datos_actual.alterar_estructura_de_tabla(tabla, listaAcciones)
+        
+    # Eliminar la tabla descrita por tabla
+    def eliminar_tabla(self, tabla):
+        # Vericar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Renombrar tabla de la base de datos actual
+        self.base_de_datos_actual.eliminar_tabla(tabla)
+        
+    # Muestra las tablas de la base de datos actual.
+    def mostrar_tablas(self):
+        # Vericar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Renombrar tabla de la base de datos actual
+        return self.base_de_datos_actual.mostrar_tablas()
+        
+    # Muestra las columnas de la tabla descrita en tabla.
+    def mostrar_columnas_de_tabla(self, tabla): 
+        # Vericar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Renombrar tabla de la base de datos actual
+        return self.base_de_datos_actual.mostrar_columnas_de_tabla(tabla)
         
 class BaseDeDatos():
     # Contructor
-    def __init__(self, nombre, path, cantTablas):
+    def __init__(self, manejador, nombre, path, cantTablas):
         # Agregar los datos de la base de datos
         self.log = logging.getLogger('byDBMS.ManejadorBaseDatos.BaseDeDatos('+nombre+')')
+        self.manejador = manejador
         self.nombre = nombre
-        self.path = path + '/' +  nombre + '.tbl'
+        self.path = path 
+        self.schema_file = path + nombre + '/' + nombre + '.schema'
         self.cantTablas = cantTablas
         self.tablas = []
     
@@ -255,29 +337,243 @@ class BaseDeDatos():
     def getCantidadTablas(self):
         return self.cantTablas
         
-    # Convertir a texto. 
-    def forSave(self):
-        # Declarar variables
-        r = ''
-        
-        # Formar la cadena de respuesta
-        r  = str(self.nombre) + ' = ' + str(len(self.tablas))
-        
-        # Devolver la cadena de respuesta
-        return r
-        
+    # Obtener el path de la base de datos
+    def getPath(self):
+        return self.path + '/' + self.nombre + '/'
+    
     # Carga la base de datos actual desde el archivo de metadados de la bd
     def cargar(self): 
         pass # TODO
-    
+        
+    # Crea una nueva tabla en la base de datos actual.
+    def agregar_tabla(self, tabla, listaDescripciones):
+        # Definir tabla temporal
+        tab = Tabla(tabla, self)
+        
+        # Revisar si la tabla ya existe
+        if tab in self.tablas:
+            self.log.error("La tabla '"+tabla+"' ya existe en la base de datos '"+self.getNombre()+"'.")
+            raise TableAlreadyExistException(tabla, self)
+            
+        # Validar que la definicion de tabla no tenga errores de tipo
+        # Separar constraints de columnas
+        listaColumnas = []
+        listaConstraints = []
+        for desc in listaDescripciones:
+            if type(desc) == AST.Columna:
+                listaColumnas.append(desc)
+                
+                # Revisar si tiene constrains la columna
+                if len(desc[2]) > 0:
+                    listaConstraints.append(desc)
+            else:
+                listaConstraints.append(desc)
+        
+        # Revisión de columnas
+        # Agregar columnas a la tabla
+        for columna in listaColumnas:
+            tab.agregar_columna(columna[0], columna[1][0], (columna[1][1] if columna[1][0] == 'CHAR' else None))
+        # Revisión constraints 
+        # TODO
+        
+        # Crear archivo vacio para la tabla
+        path = self.getPath() + tabla + '.tbl'
+        with open(path, 'w') as archivo:
+            archivo.write('')
+        
+        # Agregar al archivo de metadatos de bases de datos
+        atributos = tab.getAtributos()
+        restricciones = tab.getRestricciones()
+        with open(self.schema_file, 'a') as esquema:
+            esquema.write('# Tabla: ' + tabla + '\n')
+            esquema.write(tabla + '\n' )
+            esquema.write(str(len(atributos)) + '\n')
+            # Guardar cada atributo
+            for atr in atributos:
+                esquema.write(atr[0] + '\n' )
+                esquema.write(atr[1] + ('\t' + str(atr[2]) if atr[2] != None else '') + '\n' )
+            esquema.write(str(len(restricciones)) + '\n')
+            # Guardar cada restriccion
+            for rest in restricciones:
+                esquema.write(rest[0] + '\n') # Tipo
+                esquema.write(rest[1] + '\n') # Nombre
+                if rest[0] == 'PRIMARY KEY': # Si es llave primaria
+                    # Guardar lista id's
+                    ids = ''
+                    for Id in rest[2]:
+                        ids += Id + ', '
+                    ids = ids[:-2]
+                    esquema.write(ids + '\n')
+                elif rest[0] == 'FOREIGN KEY': # Si es llave foránea
+                    # Guardar lista id's locales
+                    ids = ''
+                    for Id in rest[2]:
+                        ids += Id + ', '
+                    ids = ids[:-2]
+                    esquema.write(ids + '\n')
+                   
+                    # Guardar tabla de referencia
+                    esquema.write(rest[3] + '\n')
+                    
+                    # Guardar lista id's foraneos
+                    ids = ''
+                    for Id in rest[4]:
+                        ids += Id + ', '
+                    ids = ids[:-2]
+                    esquema.write(ids + '\n')
+                else: # Si es check
+                    # Guardar expresion del check
+                    esquema.write(rest[2] + '\n')
+        
+        # Agregar a la base de datos al manejador
+        self.tablas.append(tab)
+        self.cantTablas = len(self.tablas)
+        
+        # Agregar el archivo al archivo de metadatos del manejador
+        self.manejador.actualizar_base_de_datos(self)
+        
+        # Mostrar mensaje de éxito
+        self.log.info("Tabla '"+tabla+"' creada.")
+        
+    # Cambiar el nombre de la tabla descrita en idAntiguo por idNuevo.
+    def renombrar_tabla(self, idAntiguo, idNuevo):
+        pass # TODO
+        
+    # Aplica el conjunto de acciones de listaAcciones a tabla.
+    def alterar_estructura_de_tabla(self, tabla, listaAcciones):
+        pass # TODO
+        
+    # Eliminar la tabla descrita por tabla
+    def eliminar_tabla(self, tabla):
+        pass # TODO
+        
+    # Muestra las tablas de la base de datos actual.
+    def mostrar_tablas(self):
+        self.log.debug('Mostrar tablas.')
+        # Declarar variables
+        resp = Resultado()
+        
+        # Agregar titulos
+        resp.addTitulo('Nombre')
+        resp.addTitulo('Registros')
+        
+        # Agregar cada una de las bases de datos
+        for tabla in self.tablas:
+            resp.addContenido([tabla.getNombre(), tabla.getCantidadRegistros()])
+            
+        # Regresar respuesta
+        self.log.debug(resp)
+        return resp
+        
+    # Muestra las columnas de la tabla descrita en tabla.
+    def mostrar_columnas_de_tabla(self, tabla): 
+        # Guardar en log
+        self.log.debug("Mostrar columnas de la tabla '"+tabla+"'.")
+        
+        # Verificar que la tabla exista
+        self.verificar_tabla(tabla)    
+        
+        # Regresar respuesta
+        return self.tablas[self.tablas.index(tabla)].mostrar_columnas()
+        
+    # Verifica que la tabla especificada exista
+    def verificar_tabla(self, tabla):
+        if not tabla in self.tablas:
+            ex = TableNotExistException(tabla, self)
+            self.log.error(ex)
+            raise ex
+        
 class Tabla():
     # Contructor
     def __init__(self, nombre, db):
         # Agregar los datos de la tabla
-        self.log = logging.getLogger()
+        self.log = logging.getLogger('byDBMS.ManejadorBaseDatos.BaseDeDatos('+db.getNombre()+').Tabla('+str(nombre)+')')
         self.nombre = nombre
+        self.path = db.getPath() +  nombre + '.tbl'
         self.db = db
         self.atributos = []
+        self.restricciones = []
         self.registros = 0
     
-    # 
+    # Revisar si dos objetos son iguales
+    def __eq__(self, b):
+        if type(b) == type(self):
+            return self.nombre == b.nombre
+        elif type(b) == str:
+            return self.nombre == b
+        else:
+            return False
+    
+    # Copia profunda de la tabla
+    def __deepcopy__(self):
+        pass # TODO
+        
+    # Obtener el nombre de la tabla
+    def getNombre(self):
+        return self.nombre
+        
+    # Cambair el nombre de la tabla
+    def setNombre(self, nombre):
+        self.nombre = nombre
+        
+    # Obtener los atributos de la tabla
+    def getAtributos(self):
+        return self.atributos
+        
+    # Obtener las restricciones de la tabla
+    def getRestricciones(self):
+        return self.restricciones
+    
+    # Obtener la cantidad de registros que contiene la tabla
+    def getCantidadRegistros(self):
+        return self.registros
+    
+    # Obtener la base de datos a la cual pertene
+    def getBaseDeDatos(self):
+        return self.db
+    
+    # Agregar la columna específicada
+    def agregar_columna(self, columna, tipo, valor=None):
+        # Verificar que la columna no exista
+        self.log.debug("Agregar columna '"+columna+"' a la tabla '"+self.getNombre()+"'.")
+        existe = False
+        for col in self.atributos:
+            if col[0] == columna:
+                existe = True
+                break
+        if existe:
+            ex = ColumnAlreadyExistException(columna, self)
+            self.log.error(ex)
+            raise ex
+            
+        # Agregar la nueva columna
+        self.atributos.append((columna, tipo, valor))
+        self.log.debug("Columna '"+columna+"' agregada a la tabla '"+self.getNombre()+"'.")
+        
+    # Muestra las columnas de la tabla descrita en tabla.
+    def mostrar_columnas(self): 
+        self.log.debug('Mostrar columnas de la tabla.')
+        # Declarar variables
+        resp = Resultado()
+        
+        # Agregar titulos
+        resp.addTitulo('Nombre')
+        resp.addTitulo('Tipo')
+        resp.addTitulo('Tamaño')
+        resp.addTitulo('EsRestriccion')
+        resp.addTitulo('Valor1')
+        resp.addTitulo('Valor2')
+        resp.addTitulo('Valor3')
+        
+        # Agregar cada una de las restricciones
+        for atributo in self.atributos:
+            resp.addContenido([atributo[0], atributo[1], atributo[2] if atributo[1] == 'CHAR' else 'NULL', 'False', 'NULL', 'NULL', 'NULL'])
+            
+        # Agregar cada una de las restricciones
+        for restriccion in self.restricciones:
+            resp.addContenido([restriccion[1], restriccion[0], 'NULL', 'True', (
+                (restriccion[2], restriccion[3], restriccion[4]) if restriccion[0] == "FOREIGN KEY" else (restriccion[2], 'NULL', 'NULL')
+                )])
+
+        # Regresar respuesta
+        return resp
