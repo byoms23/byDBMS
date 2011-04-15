@@ -107,7 +107,52 @@ class ManejadorBaseDatos():
         
     # Cambia el nombre de la base de datos especificada por dbAntigua por dbNueva
     def renombrar_base_de_datos(self, dbAntigua, dbNueva):
-        pass # TODO
+        # Definir Base de datos
+        dboAnt = BaseDeDatos(dbAntigua, self.path, 0)
+        dboNue = BaseDeDatos(dbNueva,   self.path, 0)
+        
+        # Revisar que no se renombre al mismo nombre de la base de datos
+        if dbAntigua == dbNueva:
+            self.log.info("Base de datos '"+str(dbAntigua)+"' renombrada a '"+str(dbNueva)+"'.")
+            return
+        
+        # Revisar si la base de datos antigua existe
+        if not dboAnt in self.bases_de_datos:
+            self.log.error("Base de datos '"+dbAntigua+"' no existe.")
+            raise DataBaseNotExistException(dbAntigua)
+        
+        # Revisar si la nueva base de datos existe
+        if dboNue in self.bases_de_datos:
+            self.log.error("Base de datos '"+dbNueva+"' ya existe.")
+            raise DataBaseAlreadyExistException(dbNueva)
+        
+        # Eliminar base de datos del disco duro
+        shutil.move(self.path + '/' + dbAntigua + '/', self.path + '/' + dbNueva + '/')
+        
+        # Eliminar base de datos del registro
+        with open(self.schema_file_name) as esquema:
+            dataBases = esquema.readlines()
+        # Revisar cada base de datos almacenada
+        self.log.debug("Antes: \n" + str(dataBases))
+        for temp in dataBases:
+            # Buscar base de datos
+            try:
+                t = temp.split('=')
+                if t[0].strip() == dbAntigua:
+                    dataBases.remove(temp)
+                    dataBases.append(dbNueva + ' = ' + t[1].strip())
+                    break
+            except:
+                pass
+        # Guardar en el archivo
+        self.log.debug("Después: \n" + str(dataBases))
+        with open(self.schema_file_name, 'w') as esquema:
+            esquema.writelines(dataBases)
+        
+        # Eliminar base de datos del manejador
+        db = self.bases_de_datos[self.bases_de_datos.index(dboAnt)]
+        db.setNombre(dbNueva)
+        self.log.info("Base de datos '"+str(dbAntigua)+"' renombrada a '"+str(dbNueva)+"'.")
         
     # Elimina la base de datos seleccionada en db
     def eliminar_base_de_datos(self, db):
