@@ -8,7 +8,7 @@
 
 # Importar modulos
 import logging
-import os
+import os, shutil
 from Excepciones import *
 from Resultados import *
 
@@ -109,9 +109,41 @@ class ManejadorBaseDatos():
     def renombrar_base_de_datos(self, dbAntigua, dbNueva):
         pass # TODO
         
-    # 
+    # Elimina la base de datos seleccionada en db
     def eliminar_base_de_datos(self, db):
-        pass # TODO
+        # Definir Base de datos
+        dbo = BaseDeDatos(db, self.path, 0)
+        
+        # Revisar si la base de datos ya existe
+        if not dbo in self.bases_de_datos:
+            self.log.error("Base de datos '"+db+"' no existe.")
+            raise DataBaseNotExistException(db)
+        
+        # Eliminar base de datos del manejador
+        self.bases_de_datos.remove(dbo)
+        
+        # Eliminar base de datos del registro
+        with open(self.schema_file_name) as esquema:
+            dataBases = esquema.readlines()
+        # Revisar cada base de datos almacenada
+        self.log.debug("Antes: \n" + str(dataBases))
+        for temp in dataBases:
+            # Buscar base de datos
+            try:
+                t = temp.split('=')[0].strip()
+                if t == db:
+                    dataBases.remove(temp)
+                    break
+            except:
+                pass
+        # Guardar en el archivo
+        self.log.debug("Después: \n" + str(dataBases))
+        with open(self.schema_file_name, 'w') as esquema:
+            esquema.writelines(dataBases)
+        
+        # Eliminar base de datos del disco duro
+        shutil.rmtree(self.path + '/' + db + '/')
+        self.log.info("Base de datos '"+str(db)+"' borrada.")
     
     # Crea el resultado de la información que es presentada
     def mostrar_bases_de_datos(self):
