@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Universidad del Valle de Guatemala
 # CC3010 Administracion de la Informacion (Seccion 10)
 # Byron Orlando Morales Sequen (08414)
@@ -10,11 +11,51 @@ from lepl import *
 from AST import *
 
 # Definicion de Tokens admitidos que son omitidos
-# text:
+# text: Conjunto de caracteres que serán reconocidos.
 def txt(text):
     return ~Token(text)
 
+# ----------------------------------------------------------------------
 # Construye el analizador sintactico.
+# ----------------------------------------------------------------------
+
+# Devuelve el analizador sintáctico para expresiones booleanas admitidas
+def buildExp():
+    # Definir tokens    
+    identi = Token('[a-zA-Z][0-9a-zA-Z]*') > Identificador
+    integer = Token(Integer()) > Int
+    real = Token(Real()) > Float
+    null = Token("NULL") > Null
+    s = Token("'[A-Za-z0-9]*'") > Char
+    
+    # Definicion de expresiones aceptadas
+    value = ( identi
+            | integer
+            | real
+            | null 
+            | s )
+    
+    predExp = ( (value & Token("=")  & value) 
+              | (value & Token("<>") & value) 
+              | (value & Token("!=") & value) 
+              | (value & Token(">")  & value) 
+              | (value & Token(">=") & value) 
+              | (value & Token("<")  & value) 
+              | (value & Token("<=") & value) 
+              | value 
+              ) > PredExp
+
+    notExp = (Token("NOT") & predExp) | predExp > NotExp
+
+    andExp = Delayed()
+    andExp += (notExp & Token("AND") & andExp) | notExp > AndExp
+
+    exp = Delayed()
+    exp += (andExp & Token("OR") & exp) | andExp > Exp
+    
+    return exp
+
+
 # Devuelve el analizar sintactico para SQL.
 def build():
     # Definir tokens    
@@ -43,46 +84,16 @@ def build():
     tableShowAll = txt('SHOW') & txt("TABLES") > TableShowAll
     tableShowColumns = txt('SHOW') & txt("COLUMNS") & txt("FROM") & identi > TableShowColumns
 
-    # Definicion de expresiones
-    null = Token("NULL")
-    s = Token("'[A-Za-z0-9]*'")
-    value = identi | Token(UnsignedInteger()) | Token(UnsignedReal()) | null | s
-
-    negateExp = (simbolo("-") & value) | value > Node
-
-    multExpTemp = Delayed()
-    multExpTemp += ( (simbolo('*') & negateExp & multExpTemp)
-                   | (simbolo('/') & negateExp & multExpTemp)
-                   ) [:1] > Node
-    multExp = negateExp & multExpTemp > Node
-
-    addExpTemp = Delayed()
-    addExpTemp += ( (simbolo('+') & multExp & addExpTemp) 
-                  | (simbolo('-') & multExp & addExpTemp)
-                  ) [:1] > Node
-    addExp = multExp & addExpTemp > Node
-
-    predExp = ( (addExp & Token("=")  & addExp) 
-              | (addExp & Token("<>") & addExp) 
-              | (addExp & Token("!=") & addExp) 
-              | (addExp & Token(">")  & addExp) 
-              | (addExp & Token(">=") & addExp) 
-              | (addExp & Token("<")  & addExp) 
-              | (addExp & Token("<=") & addExp) 
-              | addExp 
-              ) > Node
-
-    notExp = (Token("NOT") & predExp) | predExp > Node
-
-    andExp = Delayed()
-    andExp += (notExp & Token("AND") & andExp) | notExp > Node
-
-    exp = Delayed()
-    exp += (andExp & Token("OR") & exp) | andExp > Node
-
-    # Definicion de columnas para el CREATE
+    # Definición de expresiones
+    exp = buildExp()
+    
+    # Definición de columnas para el CREATE
     listaIdentificadores = ~simbolo("(") & (identi & (~simbolo(",") & identi)[:,...]) & ~simbolo(")") > Node
-    tipo = Token('INT') | Token('FLOAT') | Token('DATE') | (Token('CHAR') & ~simbolo('(') & number & ~simbolo(')')) > Node
+    tipo = (Token('INT') 
+           | Token('FLOAT') 
+           | Token('DATE') 
+           | (Token('CHAR') & ~simbolo('(') & number & ~simbolo(')'))
+           ) > Node
     constraintColumna = ( (Token("PRIMARY") & Token("KEY")) 
                         | (Token("REFERENCES") & identi & ~simbolo("(") & (identi) & ~simbolo(")"))
                         | (Token("CHECK") & ~simbolo("(") & (exp) & ~simbolo(")"))
@@ -128,14 +139,14 @@ def build():
     #~ print multExp.parse("-33 / 34")[0]
     #~ print multExp.parse("-33 / 34 * 34535 * -345435") [0]
     #~ print addExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6 ")[0]
-    #~ print predExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6  = 3")[0]
+    #~ print predExp.parse("3 = 3")[0]
+    #~ print predExp.parse("c5 != 3")[0]
+    #~ print predExp.parse("-33 <> 3")[0]
     #~ print predExp.parse("c5 > 3")[0]
     #~ print predExp.parse("c5 >= 3")[0]
     #~ print predExp.parse("c5 < 3")[0]
     #~ print predExp.parse("c5 <= 3")[0]
-    #~ print predExp.parse("c5 > 3")[0]
-    #~ print predExp.parse("c5 > 3")[0]
-    #~ print predExp.parse("-33 <> 3")[0]
+    #~ print predExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6  = 3")[0]
     #~ print predExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6  != 3")[0]
     #~ print predExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6  < 3")[0]
     #~ print predExp.parse("-33 / 34 * 34535 * -345435 + 344 * 4 - 5 / 6  <= 3")[0]
@@ -210,3 +221,4 @@ def build():
         #~ DROP TABLE cosita
         #~ """)[0]
     #~ print s 
+

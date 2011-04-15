@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Universidad del Valle de Guatemala
 # CC3010 Administracion de la Informacion (Seccion 10)
 # Byron Orlando Morales Sequen (08414)
@@ -62,3 +63,37 @@ class TableShowAll(SQLQuery):
 # Mostrar columnas de una tabla
 class TableShowColumns(SQLQuery):
     pass
+
+# --------------------------------------
+# 2.1) Clases para expresiones booleanas
+# --------------------------------------
+# Representa un valor aceptado
+class Valor(Node) : pass
+
+# Representa un identificador
+class Identificador(Valor): pass
+
+# Representa un INT
+class Int(Valor): pass
+
+# Representa un Float
+class Float(Valor): pass
+
+# Representa un Char
+class Char(Valor) : pass
+
+# Representa NULL
+class Null(Valor) : pass
+
+# Representa una expresión de  predicado
+class PredExp(Node) : pass
+
+# Representa una expresión negadada
+class NotExp(Node) : pass
+
+# Representa una expresión con AND's
+class AndExp(Node) : pass
+
+# Una expresión
+class Exp(Node): pass
+
