@@ -320,7 +320,7 @@ class BaseDeDatos():
         self.manejador = manejador
         self.nombre = nombre
         self.path = path 
-        self.schema_file = path + nombre + '/' + nombre + '.schema'
+        self.schema_file = path + nombre + '/' + 'tables' + '.schema'
         self.cantTablas = cantTablas
         self.tablas = []
     
@@ -487,7 +487,52 @@ class BaseDeDatos():
         
     # Cambiar el nombre de la tabla descrita en idAntiguo por idNuevo.
     def renombrar_tabla(self, idAntiguo, idNuevo):
-        pass # TODO
+        # Definir tablas
+        idAntiguo = idAntiguo.lower()
+        idNuevo = idNuevo.lower()
+        anterior = Tabla(idAntiguo, self)
+        nueva    = Tabla(idNuevo,   self)
+        
+        # Revisar que no se renombre al mismo nombre de la base de datos
+        if idAntiguo == idNuevo:
+            self.log.info("Tabla '"+str(dbAntiguo)+"' renombrada a '"+str(dbNuevo)+"'.")
+            return
+        
+        # Revisar si la tabla antigua existe
+        if not anterior in self.tablas:
+            ex = TableNotExistException(idAntiguo)
+            self.log.error(ex)
+            raise ex
+        
+        # Revisar si la tabla nueva existe
+        if nueva in self.tablas:
+            ex = TableAlreadyExistException(idNuevo)
+            self.log.error(ex)
+            raise ex
+        
+        # Renombrar la tabla en el disco duro
+        os.rename(self.getPath() + idAntiguo + '.tbl', self.getPath() + idNuevo + '.tbl')
+        
+        # Cambair dependencias
+        for t in self.tablas:
+            if not t is tab:
+                t.actualizar_dependencia(idAntiguo, idNuevo)
+                try:
+                    t.removeDependiente(idAntiguo)
+                    t.addDependiente(idNuevo)
+                except ValueError, msg:
+                    print msg
+                    pass
+        
+        # Eliminar base de datos del manejador
+        tab = self.tablas[self.tablas.index(anterior)]
+        tab.setNombre(idNuevo)
+
+        # Renombrar en el archivo de metadatos
+        self.reemplazar_tabla_metadatos(anterior, tab)
+        
+        # Log
+        self.log.info("Tabla '"+str(idAntiguo)+"' renombrada a '"+str(idNuevo)+"'.")
         
     # Aplica el conjunto de acciones de listaAcciones a tabla.
     def alterar_estructura_de_tabla(self, tabla, listaAcciones):
@@ -518,7 +563,7 @@ class BaseDeDatos():
         for t in self.tablas:
             try:
                 t.removeDependiente(tabla.getNombre())
-            except:
+            except ValueError, msg:
                 pass
             
             
@@ -622,12 +667,72 @@ class BaseDeDatos():
                 else: # Si es check
                     # Guardar expresion del check
                     esquema.write(rest[2] + '\n')
-            esquema.write('## Dependen de la tabla \n' )
+            esquema.write('## Tablas que dependen de esta tabla \n' )
             # Guardar lista id's foraneos
             deps = ''
             for dep in tab.getDependientes():
                 deps += dep + ', '
             esquema.write(deps[:-2] + '\n')
+    
+    # Guarda la tabla especificada en el archivo de metadatos
+    def crear_lista_tabla(self, tab):
+        # Variables
+        atributos = tab.getAtributos()
+        restricciones = tab.getRestricciones()
+        
+        # Crear lista de respuesta
+        resp = []
+        resp.append('# Tabla: ' + tab.getNombre() + '\n')
+        resp.append(tab.getNombre() + '\n' )
+        resp.append('## Registros \n' )
+        resp.append(str(tab.getCantidadRegistros()) + ' \n')
+        resp.append('## Columnas \n' )
+        resp.append(str(len(atributos)) + '\n')
+        # Guardar cada atributo
+        for atr in atributos:
+            resp.append(atr[0] + '\n' )
+            resp.append(atr[1] + ('\t' + str(atr[2]) if atr[2] != None else '') + '\n' )
+        resp.append('## Restricciones \n' )
+        resp.append(str(len(restricciones)) + '\n')
+        # Guardar cada restriccion
+        for rest in restricciones:
+            resp.append(rest[0] + '\n') # Tipo
+            resp.append(rest[1] + '\n') # Nombre
+            if rest[0] == 'PRIMARY KEY': # Si es llave primaria
+                # Guardar lista id's
+                ids = ''
+                for Id in rest[2]:
+                    ids += Id + ', '
+                ids = ids[:-2]
+                resp.append(ids + '\n')
+            elif rest[0] == 'FOREIGN KEY': # Si es llave foránea
+                # Guardar lista id's locales
+                ids = ''
+                for Id in rest[2]:
+                    ids += Id + ', '
+                ids = ids[:-2]
+                resp.append(ids + '\n')
+               
+                # Guardar tabla de referencia
+                resp.append(rest[3] + '\n')
+                
+                # Guardar lista id's foraneos
+                ids = ''
+                for Id in rest[4]:
+                    ids += Id + ', '
+                ids = ids[:-2]
+                resp.append(ids + '\n')
+            else: # Si es check
+                # Guardar expresion del check
+                resp.append(rest[2] + '\n')
+        resp.append('## Tablas que dependen de esta tabla \n' )
+        # Guardar lista id's foraneos
+        deps = ''
+        for dep in tab.getDependientes():
+            deps += dep + ', '
+        resp.append(deps[:-2] + '\n')
+        
+        return resp
             
     # Borrar tabla del archivo de metadatos.
     def borrar_tabla_metadatos(self, tabla):
@@ -636,52 +741,69 @@ class BaseDeDatos():
             config = map(lambda x : x[:-1], esquema.readlines())
             
         # Buscar tabla especificada
-        inicio = None
-        fin = None
-        
-        # Recorrer tablas
-        i = 1
-        for tabs in range(self.getCantidadTablas() + 1):
-            # Crear tabla
-            if config[i] == tabla.getNombre():
-                inicio = i - 1
-            i += 2
-            # Registros
-            i += 2
-            # Columnas
-            for cols in xrange(int(config[i])):
-                i += 1
-                i += 1
-            # Cada restricción
-            i += 2
-            for rests in xrange(int(config[i])):
-                i += 1
-                if config[i] == 'PRIMARY KEY':
-                    i += 1
-                    i += 1
-                elif config[i] == 'FOREIGN KEY':
-                    i += 1
-                    i += 1
-                    i += 1
-                    i += 1
-                else:
-                    i += 1
-                    i += 1
-            # Cada dependiente
-            i += 2
-            # Ir por la siguiente
-            i += 2
-            
-            # Ver si era la tabla especificada
-            if inicio != None:
-                fin = i - 1
-                break
+        inicio, fin = self.buscar_tabla_metadatos(config, tabla)
                 
         # Guardar en el archivo
         del config[inicio:fin]
         config = map(lambda x : x + '\n', config)
         with open(self.schema_file, 'w') as esquema:
             esquema.writelines(config)
+        
+    # Busca una tabla en el archivo de metadatos
+    def buscar_tabla_metadatos(self, lista, tabla):
+        # Buscar tabla
+        config = lista
+            
+        # Buscar tabla especificada
+        inicio = None
+        fin = None
+        
+        # Recorrer tablas
+        i = 1
+        for tabs in range(self.getCantidadTablas() + 1):
+            # Revisar por tabla
+            if config[i] == tabla.getNombre():
+                inicio = i - 1
+            # Registros y columnas
+            i += 4
+            for cols in xrange(int(config[i])):
+                i += 2
+            # Cada restricción
+            i += 2
+            for rests in xrange(int(config[i])):
+                i += 1
+                if config[i] == 'FOREIGN KEY':
+                    i += 4
+                else:
+                    i += 2
+            # Cada dependiente e Ir por la siguiente
+            i += 4
+            
+            # Ver si era la tabla especificada
+            if inicio != None:
+                fin = i - 1
+                break 
+                
+        return inicio, fin
+    
+    # Reemplazar tabla en el archivo de metadatos.
+    def reemplazar_tabla_metadatos(self, tabla1, tabla2):
+        # Buscar tabla
+        with open(self.schema_file) as esquema:
+            config = map(lambda x : x[:-1], esquema.readlines())
+            
+        # Declarar variables
+        inicio, fin = self.buscar_tabla_metadatos(config, tabla1)
+                
+        # Guardar en el archivo
+        listaI = map(lambda x : x + '\n', config[:inicio])
+        listaF = map(lambda x : x + '\n', config[fin:])
+        lista = listaI
+        lista.extend(self.crear_lista_tabla(tabla2))
+        lista.extend(listaF)
+        
+        with open(self.schema_file, 'w') as esquema:
+            esquema.writelines(lista)
         
 class Tabla():
     # Contructor
@@ -743,16 +865,14 @@ class Tabla():
             self.dependientes.append(tabla)
         
         # Actualizar metadatos
-        self.db.borrar_tabla_metadatos(self)
-        self.db.escribir_tabla(self)
+        self.db.reemplazar_tabla_metadatos(self, self)
     
     # Agregar que hace referencia a esta tabla
     def removeDependiente(self, tabla):
         self.dependientes.remove(tabla)
 
         # Actualizar metadatos
-        self.db.borrar_tabla_metadatos(self)
-        self.db.escribir_tabla(self)
+        self.db.reemplazar_tabla_metadatos(self, self)
     
     # Agregar que hace referencia a esta tabla
     def getDependientes(self):
@@ -762,6 +882,17 @@ class Tabla():
     def setDependientes(self, dependientes):
         self.dependientes = dependientes
     
+    # Actualizar dependencia si existe
+    def actualizar_dependencia(self, old, new):
+        # Recorrer restricciones en busca de FK
+        for r in self.restricciones:
+            if r[0] == "FOREIGN KEY":
+                if r[3] == old:
+                    r[3] = new
+                    
+        # Actualizar metadatos
+        self.db.reemplazar_tabla_metadatos(self, self)
+        
     # Agregar la columna específicada
     def agregar_columna(self, columna, tipo, valor=None):
         # Verificar que la columna no exista
