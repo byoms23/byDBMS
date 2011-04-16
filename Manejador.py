@@ -306,6 +306,11 @@ class ManejadorBaseDatos():
         # Renombrar tabla de la base de datos actual
         return self.base_de_datos_actual.mostrar_columnas_de_tabla(tabla)
         
+    # Quita dependencias rotas
+    def revisar(self):
+        if self.base_de_datos_actual != None:
+            self.base_de_datos_actual.revisar()
+        
 class BaseDeDatos():
     # Contructor
     def __init__(self, manejador, nombre, path, cantTablas):
@@ -343,7 +348,65 @@ class BaseDeDatos():
     
     # Carga la base de datos actual desde el archivo de metadados de la bd
     def cargar(self): 
-        pass # TODO
+        #~ atributos = tab.getAtributos()
+        #~ restricciones = tab.getRestricciones()
+        # Cargar desde el esquema
+        with open(self.schema_file) as esquema:
+            config = esquema.readlines()
+            
+        # Cargar la cantidad de tablas específicada
+        cantidad = self.getCantidadTablas()
+        
+        
+        #~ esquema.write('# Tabla: ' + tabla + '\n')
+        #~ esquema.write(tabla + '\n' )
+        #~ esquema.write('## Registros \n' )
+        #~ esquema.write(str(tab.getCantidadRegistros()) + ' \n')
+        #~ esquema.write('## Columnas \n' )
+        #~ esquema.write(str(len(atributos)) + '\n')
+        #~ # Guardar cada atributo
+        #~ for atr in atributos:
+            #~ esquema.write(atr[0] + '\n' )
+            #~ esquema.write(atr[1] + ('\t' + str(atr[2]) if atr[2] != None else '') + '\n' )
+        #~ esquema.write('## Restricciones \n' )
+        #~ esquema.write(str(len(restricciones)) + '\n')
+        #~ # Guardar cada restriccion
+        #~ for rest in restricciones:
+            #~ esquema.write(rest[0] + '\n') # Tipo
+            #~ esquema.write(rest[1] + '\n') # Nombre
+            #~ if rest[0] == 'PRIMARY KEY': # Si es llave primaria
+                #~ # Guardar lista id's
+                #~ ids = ''
+                #~ for Id in rest[2]:
+                    #~ ids += Id + ', '
+                #~ ids = ids[:-2]
+                #~ esquema.write(ids + '\n')
+            #~ elif rest[0] == 'FOREIGN KEY': # Si es llave foránea
+                #~ # Guardar lista id's locales
+                #~ ids = ''
+                #~ for Id in rest[2]:
+                    #~ ids += Id + ', '
+                #~ ids = ids[:-2]
+                #~ esquema.write(ids + '\n')
+               #~ 
+                #~ # Guardar tabla de referencia
+                #~ esquema.write(rest[3] + '\n')
+                #~ 
+                #~ # Guardar lista id's foraneos
+                #~ ids = ''
+                #~ for Id in rest[4]:
+                    #~ ids += Id + ', '
+                #~ ids = ids[:-2]
+                #~ esquema.write(ids + '\n')
+            #~ else: # Si es check
+                #~ # Guardar expresion del check
+                #~ esquema.write(rest[2] + '\n')
+        #~ esquema.write('## Dependen de la tabla \n' )
+        #~ # Guardar lista id's foraneos
+        #~ deps = ''
+        #~ for dep in tab.getDependientes():
+            #~ deps += dep + ', '
+        #~ esquema.write(deps[:-2] + '\n')
         
     # Crea una nueva tabla en la base de datos actual.
     def agregar_tabla(self, tabla, listaDescripciones):
@@ -370,11 +433,35 @@ class BaseDeDatos():
                 listaConstraints.append(desc)
         
         # Revisión de columnas
-        # Agregar columnas a la tabla
         for columna in listaColumnas:
+            # Agregar columnas a la tabla
             tab.agregar_columna(columna[0], columna[1][0], (columna[1][1] if columna[1][0] == 'CHAR' else None))
+        
         # Revisión constraints 
-        # TODO
+        for restriccion in listaConstraints:
+            if type(restriccion) == AST.Columna:
+                # Revisar cada restricción corta
+                for restriccionCorta in restriccion[2]:
+                    tipo = restriccionCorta[0] if restriccionCorta[0] == 'CHECK' else (
+                            "PRIMARY KEY" if restriccionCorta[0] == 'PRIMARY' else "FOREIGN KEY")
+                    nombre = tab.generar_nombre(tipo)
+                    if tipo == 'CHECK':
+                        tab.agregar_chequeo(nombre, restriccionCorta[1], requerido=restriccion[0])
+                    elif tipo == 'PRIMARY KEY':
+                        tab.agregar_clave_primaria(nombre, [restriccion[0]])
+                    else:
+                        tab.agregar_clave_foranea(nombre, [restriccion[0]], restriccionCorta[1], [restriccionCorta[2]])
+                
+            else:
+                # Agregar alguna de las restricciones validas
+                tipo = restriccion[0] if restriccion[0] == 'CHECK' else (restriccion[0] + " KEY")
+                nombre = restriccion[1]
+                if tipo == 'CHECK':
+                    tab.agregar_chequeo(nombre, restriccion[2])
+                elif tipo == 'PRIMARY KEY':
+                    tab.agregar_clave_primaria(nombre, restriccion[2])
+                else:
+                    tab.agregar_clave_foranea(nombre, restriccion[2], restriccion[3], restriccion[4])
         
         # Crear archivo vacio para la tabla
         path = self.getPath() + tabla + '.tbl'
@@ -382,49 +469,8 @@ class BaseDeDatos():
             archivo.write('')
         
         # Agregar al archivo de metadatos de bases de datos
-        atributos = tab.getAtributos()
-        restricciones = tab.getRestricciones()
-        with open(self.schema_file, 'a') as esquema:
-            esquema.write('# Tabla: ' + tabla + '\n')
-            esquema.write(tabla + '\n' )
-            esquema.write(str(len(atributos)) + '\n')
-            # Guardar cada atributo
-            for atr in atributos:
-                esquema.write(atr[0] + '\n' )
-                esquema.write(atr[1] + ('\t' + str(atr[2]) if atr[2] != None else '') + '\n' )
-            esquema.write(str(len(restricciones)) + '\n')
-            # Guardar cada restriccion
-            for rest in restricciones:
-                esquema.write(rest[0] + '\n') # Tipo
-                esquema.write(rest[1] + '\n') # Nombre
-                if rest[0] == 'PRIMARY KEY': # Si es llave primaria
-                    # Guardar lista id's
-                    ids = ''
-                    for Id in rest[2]:
-                        ids += Id + ', '
-                    ids = ids[:-2]
-                    esquema.write(ids + '\n')
-                elif rest[0] == 'FOREIGN KEY': # Si es llave foránea
-                    # Guardar lista id's locales
-                    ids = ''
-                    for Id in rest[2]:
-                        ids += Id + ', '
-                    ids = ids[:-2]
-                    esquema.write(ids + '\n')
-                   
-                    # Guardar tabla de referencia
-                    esquema.write(rest[3] + '\n')
-                    
-                    # Guardar lista id's foraneos
-                    ids = ''
-                    for Id in rest[4]:
-                        ids += Id + ', '
-                    ids = ids[:-2]
-                    esquema.write(ids + '\n')
-                else: # Si es check
-                    # Guardar expresion del check
-                    esquema.write(rest[2] + '\n')
-        
+        self.escribir_tabla(tab)
+            
         # Agregar a la base de datos al manejador
         self.tablas.append(tab)
         self.cantTablas = len(self.tablas)
@@ -482,6 +528,71 @@ class BaseDeDatos():
             ex = TableNotExistException(tabla, self)
             self.log.error(ex)
             raise ex
+            
+        return self.tablas[self.tablas.index(tabla)]
+        
+    # Quita dependencias rotas
+    def revisar(self):
+        for tabla in self.tablas:
+            for dep in tabla.getDependientes():
+                if not dep in self.tablas:
+                    tabla.removeDependiente(dep)
+                    
+    
+    # Guarda la tabla especificada en el archivo de metadatos
+    def escribir_tabla(self, tab)
+        atributos = tab.getAtributos()
+        restricciones = tab.getRestricciones()
+        with open(self.schema_file, 'a') as esquema:
+            esquema.write('# Tabla: ' + tabla + '\n')
+            esquema.write(tabla + '\n' )
+            esquema.write('## Registros \n' )
+            esquema.write(str(tab.getCantidadRegistros()) + ' \n')
+            esquema.write('## Columnas \n' )
+            esquema.write(str(len(atributos)) + '\n')
+            # Guardar cada atributo
+            for atr in atributos:
+                esquema.write(atr[0] + '\n' )
+                esquema.write(atr[1] + ('\t' + str(atr[2]) if atr[2] != None else '') + '\n' )
+            esquema.write('## Restricciones \n' )
+            esquema.write(str(len(restricciones)) + '\n')
+            # Guardar cada restriccion
+            for rest in restricciones:
+                esquema.write(rest[0] + '\n') # Tipo
+                esquema.write(rest[1] + '\n') # Nombre
+                if rest[0] == 'PRIMARY KEY': # Si es llave primaria
+                    # Guardar lista id's
+                    ids = ''
+                    for Id in rest[2]:
+                        ids += Id + ', '
+                    ids = ids[:-2]
+                    esquema.write(ids + '\n')
+                elif rest[0] == 'FOREIGN KEY': # Si es llave foránea
+                    # Guardar lista id's locales
+                    ids = ''
+                    for Id in rest[2]:
+                        ids += Id + ', '
+                    ids = ids[:-2]
+                    esquema.write(ids + '\n')
+                   
+                    # Guardar tabla de referencia
+                    esquema.write(rest[3] + '\n')
+                    
+                    # Guardar lista id's foraneos
+                    ids = ''
+                    for Id in rest[4]:
+                        ids += Id + ', '
+                    ids = ids[:-2]
+                    esquema.write(ids + '\n')
+                else: # Si es check
+                    # Guardar expresion del check
+                    esquema.write(rest[2] + '\n')
+            esquema.write('## Dependen de la tabla \n' )
+            # Guardar lista id's foraneos
+            deps = ''
+            for dep in tab.getDependientes():
+                deps += dep + ', '
+            esquema.write(deps[:-2] + '\n')
         
 class Tabla():
     # Contructor
@@ -493,6 +604,7 @@ class Tabla():
         self.db = db
         self.atributos = []
         self.restricciones = []
+        self.dependientes = []
         self.registros = 0
     
     # Revisar si dos objetos son iguales
@@ -531,10 +643,23 @@ class Tabla():
     # Obtener la base de datos a la cual pertene
     def getBaseDeDatos(self):
         return self.db
+        
+    # Agregar que hace referencia a esta tabla
+    def addDependiente(self, tabla):
+        self.dependientes.append(tabla)
     
+    # Agregar que hace referencia a esta tabla
+    def removeDependiente(self, tabla):
+        self.dependientes.remove(tabla)
+    
+    # Agregar que hace referencia a esta tabla
+    def getDependientes(self):
+        return self.dependientes
+        
     # Agregar la columna específicada
     def agregar_columna(self, columna, tipo, valor=None):
         # Verificar que la columna no exista
+        columna = columna.lower()
         self.log.debug("Agregar columna '"+columna+"' a la tabla '"+self.getNombre()+"'.")
         existe = False
         for col in self.atributos:
@@ -547,8 +672,162 @@ class Tabla():
             raise ex
             
         # Agregar la nueva columna
-        self.atributos.append((columna, tipo, valor))
+        self.atributos.append((columna.lower(), tipo, valor))
         self.log.debug("Columna '"+columna+"' agregada a la tabla '"+self.getNombre()+"'.")
+        
+    # Busca el nombre dentro de la tabla
+    def existe_nombre(self, name):
+        # Buscar
+        for rest in self.restricciones:
+            if rest[1] == name:
+                return True
+        return False
+
+    # Genera un nombre valido para la restriccion indicada
+    def generar_nombre(self, restriccion):
+            
+        # Declarar variables
+        contador = 0
+        ret = None
+        
+        # Crear nuevo nombre de restricción
+        while not ret:
+            if restriccion == 'CHECK':
+                a = "CH_%.10i" % contador 
+            elif restriccion == 'PRIMARY KEY':
+                a = "PK_%.10i" % contador 
+            else:
+                a = "FK_%.10i" % contador
+            if not self.existe_nombre(a):
+                ret = a
+            contador += 1
+            
+        return ret
+        
+    # Devuelve la lista de los atributos que conforman la llame primaria, si no hay llame primaria devuelve None.
+    def get_clave_primaria(self):
+        # Declarar variables
+        r = None
+        
+        # Hacer la busqueda
+        for rest in self.restricciones:
+            if rest[0] == "PRIMARY KEY":
+                r = rest[2]
+                break
+        
+        # Devolver el resultado
+        return r
+        
+    # Revisa si cada elemento de la listaAtributos pertenece a la tabla
+    def contiene_atributos(self, listaAtributos):
+        # Crear lista temporal
+        tempList = map(str.lower,listaAtributos)
+        
+        # Revisar cada atributo
+        for at in self.atributos:
+            if at[0] in tempList:
+                tempList.remove(at[0])
+            # Si se encontraron todos los atributos salir
+            if len(tempList) == 0:
+                break
+                
+        # Revisar si estaban todos los elementos
+        if len(tempList) > 0:
+            ex = ColumnNotExistException(tempList[0], self)
+            self.log.error(ex)
+            raise ex
+    
+    # Devuelve una lista de los tipos de los atributos enviados en listaAtributos
+    def tipo_de_atributos(self, listaAtributos):
+        # Crear lista temporal
+        listaAtributos = map(str.lower,listaAtributos)
+        tempList = []
+        
+        # Revisar cada atributo
+        mapeo = {}
+        colocar = lambda atri : mapeo.__setitem__(atri[0], atri[1])
+        map(colocar, self.atributos)
+        for at in listaAtributos:
+            tempList.append(mapeo[at])
+                
+        # Revisar si estaban todos los elementos
+        return tempList
+
+    # Agregar la clave primaria
+    def agregar_clave_primaria(self, nombre, listaAtributos):
+        # Revisar si la tabla ya tiene llave primaria
+        if self.get_clave_primaria() != None:
+            ex = PrimaryKeyAlreadyException(self)
+            self.log.error(ex)
+            raise ex
+            
+        # Revisar si el nombre de restricción ya existe
+        if self.existe_nombre(nombre):
+            ex = ConstraintNameAlreadyException(nombre, self)
+            self.log.error(ex)
+            raise ex
+        
+        # Revisar si cada elemento de la lista pertenece a esta tabla    
+        self.contiene_atributos(listaAtributos)
+        
+        # Agregar clave primaria
+        self.restricciones.append(["PRIMARY KEY", nombre.lower(), map(str.lower, listaAtributos)])
+        self.log.debug("Restricción agregada: " + str(self.restricciones[-1]) + ".")
+
+    # Agregar una clave foranea
+    def agregar_clave_foranea(self, nombre, listaLocal, tabla, listaForanea):
+        # Formato de los nombres
+        nombre = nombre.lower()
+        listaLocal = map(str.lower, listaLocal)
+        tabla = tabla.lower()
+        listaForanea = map(str.lower, listaForanea)
+        
+        # Revisar si el nombre de restricción ya existe
+        if self.existe_nombre(nombre):
+            ex = ConstraintNameAlreadyException(nombre, self)
+            self.log.error(ex)
+            raise ex
+        
+        # Revisar si la tabla foranea existe
+        tabForanea = self.db.verificar_tabla(tabla)
+        
+        # Revisar si cada elemento de la lista local pertenece a esta tabla    
+        self.contiene_atributos(listaLocal)
+            
+        # Revisar si cada elemento de la lista local pertenece a esta tabla    
+        tabForanea.contiene_atributos(listaForanea)
+        
+        # Revisar que tengan el mismo tamaño
+        if len(listaLocal) != len(listaForanea):
+            ex = AmountsOfColumnsNotMatchException(nombre, self, tabForanea)
+            self.log.error(ex)
+            raise ex
+        
+        # Revisar si el tipo de cada atributo es correcto
+        tiposLocales = self.tipo_de_atributos(listaLocal)
+        tiposForaneos = tabForanea.tipo_de_atributos(listaForanea)
+        primariasForaneas = tabForanea.get_clave_primaria()
+        for i in xrange(len(tiposLocales)):
+            # Revisar el tipo
+            if tiposLocales[i] != tiposForaneos[i]:
+                ex = ColumnTypeNotMatchException(listaLocal[i], tiposLocales[i], self, listaForanea[i], tiposForaneos[i], tabForanea)
+                self.log.error(ex)
+                raise ex
+                
+            # Revisar que sea parte de la llame primaria
+            if not listaForanea[i] in primariasForaneas:
+                ex = ColumnIsNotPrimaryKeyException(listaForanea[i], tabForanea)
+                self.log.error(ex)
+                raise ex
+        
+        # Agregar clave primaria
+        self.restricciones.append(["FOREIGN KEY", nombre, listaLocal, tabla, listaForanea])
+        tabForanea.addDependiente(self)
+        self.log.debug("Restricción agregada: " + str(self.restricciones[-1]) + ".")
+        
+    # Agregar un chequeo
+    def agregar_chequeo(self, nombre, exp, requerido = None):
+        pass # TODO
         
     # Muestra las columnas de la tabla descrita en tabla.
     def mostrar_columnas(self): 
@@ -571,9 +850,9 @@ class Tabla():
             
         # Agregar cada una de las restricciones
         for restriccion in self.restricciones:
-            resp.addContenido([restriccion[1], restriccion[0], 'NULL', 'True', (
-                (restriccion[2], restriccion[3], restriccion[4]) if restriccion[0] == "FOREIGN KEY" else (restriccion[2], 'NULL', 'NULL')
-                )])
+            r = [restriccion[1], restriccion[0], 'NULL', 'True']
+            r.extend(((restriccion[2], restriccion[3], restriccion[4]) if restriccion[0] ==     "FOREIGN KEY" else (restriccion[2], 'NULL', 'NULL')))
+            resp.addContenido(r)
 
         # Regresar respuesta
         return resp

@@ -214,18 +214,39 @@ def ejecutar(cadena):
     except lepl.stream.maxdepth.FullFirstMatchException, msg:
         log.debug('Fin análisis léxico y sintáctico.')
         r = msg
-    except DataBaseAlreadyExistException, msg:
+    #~ except DataBaseAlreadyExistException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    #~ except DataBaseNotExistException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    #~ except DataBaseNotSelectedException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    #~ except TableNotExistException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    #~ except TableAlreadyExistException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    #~ except ColumnException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    #~ except PrimaryKeyAlreadyException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    #~ except ConstraintNameAlreadyException, msg:
+        #~ r = msg
+        #~ log.debug('Fin análisis semántico.')
+    except SemanticException, msg:
+        manejador.revision()
         r = msg
         log.debug('Fin análisis semántico.')
-    except DataBaseNotExistException, msg:
-        r = msg
-        log.debug('Fin análisis semántico.')
-    except DataBaseNotSelectedException, msg:
-        r = msg
-        log.debug('Fin análisis semántico.')
-    except TableNotExistException, msg:
-        r = msg
-        log.debug('Fin análisis semántico.')
+    #~ except Exception, msg:
+        #~ self.log.error(msg)
+        #~ r = "ERROR: Ha ocurrido un error inesperado, consulte el log para mayor información."
+        #~ log.debug('Fin análisis semántico.')
+        
     
     # Devolver resultado de la ejecución
     return r

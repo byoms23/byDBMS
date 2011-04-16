@@ -94,14 +94,14 @@ def build():
            | Token('DATE') 
            | (Token('CHAR') & ~simbolo('(') & number & ~simbolo(')'))
            ) > Node
-    constraintColumna = ( (Token("PRIMARY") & Token("KEY")) 
+    constraintColumna = ( (Token("PRIMARY") & txt("KEY")) 
                         | (Token("REFERENCES") & identi & ~simbolo("(") & (identi) & ~simbolo(")"))
                         | (Token("CHECK") & ~simbolo("(") & (exp) & ~simbolo(")"))
                         ) > Node
     listConstraintColumna = constraintColumna[:] > Node 
     descColumna = identi & tipo & listConstraintColumna > Columna
-    descConstraint = ( (Token("PRIMARY") & Token("KEY") & identi & listaIdentificadores)
-                     | (Token("FOREIGN") & Token("KEY") & identi & listaIdentificadores & Token("REFERENCES") & identi & listaIdentificadores)
+    descConstraint = ( (Token("PRIMARY") & txt("KEY") & identi & listaIdentificadores)
+                     | (Token("FOREIGN") & txt("KEY") & identi & listaIdentificadores & txt("REFERENCES") & identi & listaIdentificadores)
                      | (Token("CHECK") & identi & ~simbolo("(") & (exp) & ~simbolo(")"))
                      ) > Restriccion
     listaDescColumna += (descColumna | descConstraint) & (~simbolo(",") & (descColumna | descConstraint))[:] > Node
