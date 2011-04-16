@@ -145,3 +145,17 @@ class ColumnIsNotPrimaryKeyException(SemanticException):
     # Genera la cadena que representa a la excepcion
     def __str__(self):
         return "ERROR: El atributo '"+self.nombre+"' no es parte de la llave primaria de la tabla '"+self.tabla.getNombre()+"', en la base de datos '"+self.tabla.getBaseDeDatos().getNombre()+"'."
+
+# Contiene excepción para eliminación de una tabla que es referenciada en otra
+class NeededTableException(SemanticException):
+    # Contructor
+    def __init__(self, tabla, dependientes):
+        self.tabla = tabla
+        self.dependientes = ''
+        for d in dependientes:
+            self.dependientes += d + ', '
+        self.dependientes = self.dependientes[:-2]
+
+    # Genera la cadena que representa a la excepcion
+    def __str__(self):
+        return "ERROR: La tabla '"+self.tabla+"' no se puede eliminar, la(s) tabla(s) '"+self.dependientes+"' tienen llaves foraneas que la referencian."

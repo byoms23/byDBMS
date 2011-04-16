@@ -355,6 +355,7 @@ class BaseDeDatos():
                 config = map(lambda x : x[:-1], esquema.readlines())
                 
             # Cargar la cantidad de tablas específicada
+            self.tablas = []
             i = 1
             for tabs in range(self.getCantidadTablas()):
                 # Crear tabla
@@ -398,9 +399,9 @@ class BaseDeDatos():
                         i += 1
                         exp = config[i]
                         tab.agregar_chequeo(nombre, exp)
-                # Cada restricción
+                # Cada dependiente
                 i += 2
-                dependientes = config[i].split(', ')
+                dependientes = config[i].split(', ') if config[i].strip() != '' else []
                 tab.setDependientes(dependientes)
                 
                 # Agregar tabla
@@ -494,7 +495,38 @@ class BaseDeDatos():
         
     # Eliminar la tabla descrita por tabla
     def eliminar_tabla(self, tabla):
-        pass # TODO
+        # Revisar si la tabla existe
+        tabla = self.verificar_tabla(tabla)
+        
+        # Revisar que no haya tablas que dependan de esta tabla
+        if len(tabla.getDependientes()) > 0:
+            ex = NeededTableException(tabla.getNombre(), tabla.getDependientes())
+            self.log.error(ex)
+            raise ex
+        
+        # Eliminar tabla de la base de datos
+        self.tablas.remove(tabla)
+        self.cantTablas = len(self.tablas)
+        
+        # Eliminar del registro
+        self.borrar_tabla_metadatos(tabla)
+        
+        # Eliminar base de datos del disco duro
+        os.remove(self.getPath() + tabla.getNombre() + '.tbl')
+        
+        # Eliminar dependencias (llaves foraneas)
+        for t in self.tablas:
+            try:
+                t.removeDependiente(tabla.getNombre())
+            except:
+                pass
+            
+            
+        # Agregar el archivo al archivo de metadatos del manejador
+        self.manejador.actualizar_base_de_datos(self)
+        
+        # Log
+        self.log.info("Tabla '"+str(tabla.getNombre())+"' borrada.")
         
     # Muestra las tablas de la base de datos actual.
     def mostrar_tablas(self):
@@ -596,6 +628,60 @@ class BaseDeDatos():
             for dep in tab.getDependientes():
                 deps += dep + ', '
             esquema.write(deps[:-2] + '\n')
+            
+    # Borrar tabla del archivo de metadatos.
+    def borrar_tabla_metadatos(self, tabla):
+        # Eliminar base de datos del registro
+        with open(self.schema_file) as esquema:
+            config = map(lambda x : x[:-1], esquema.readlines())
+            
+        # Buscar tabla especificada
+        inicio = None
+        fin = None
+        
+        # Recorrer tablas
+        i = 1
+        for tabs in range(self.getCantidadTablas() + 1):
+            # Crear tabla
+            if config[i] == tabla.getNombre():
+                inicio = i - 1
+            i += 2
+            # Registros
+            i += 2
+            # Columnas
+            for cols in xrange(int(config[i])):
+                i += 1
+                i += 1
+            # Cada restricción
+            i += 2
+            for rests in xrange(int(config[i])):
+                i += 1
+                if config[i] == 'PRIMARY KEY':
+                    i += 1
+                    i += 1
+                elif config[i] == 'FOREIGN KEY':
+                    i += 1
+                    i += 1
+                    i += 1
+                    i += 1
+                else:
+                    i += 1
+                    i += 1
+            # Cada dependiente
+            i += 2
+            # Ir por la siguiente
+            i += 2
+            
+            # Ver si era la tabla especificada
+            if inicio != None:
+                fin = i - 1
+                break
+                
+        # Guardar en el archivo
+        del config[inicio:fin]
+        config = map(lambda x : x + '\n', config)
+        with open(self.schema_file, 'w') as esquema:
+            esquema.writelines(config)
         
 class Tabla():
     # Contructor
@@ -653,11 +739,20 @@ class Tabla():
         
     # Agregar que hace referencia a esta tabla
     def addDependiente(self, tabla):
-        self.dependientes.append(tabla)
+        if not tabla in self.dependientes:
+            self.dependientes.append(tabla)
+        
+        # Actualizar metadatos
+        self.db.borrar_tabla_metadatos(self)
+        self.db.escribir_tabla(self)
     
     # Agregar que hace referencia a esta tabla
     def removeDependiente(self, tabla):
         self.dependientes.remove(tabla)
+
+        # Actualizar metadatos
+        self.db.borrar_tabla_metadatos(self)
+        self.db.escribir_tabla(self)
     
     # Agregar que hace referencia a esta tabla
     def getDependientes(self):
@@ -833,7 +928,7 @@ class Tabla():
         
         # Agregar clave primaria
         self.restricciones.append(["FOREIGN KEY", nombre, listaLocal, tabla, listaForanea])
-        tabForanea.addDependiente(self)
+        tabForanea.addDependiente(self.getNombre())
         self.log.debug("Restricción agregada: " + str(self.restricciones[-1]) + ".")
         
     # Agregar un chequeo
