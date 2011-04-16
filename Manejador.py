@@ -187,6 +187,7 @@ class ManejadorBaseDatos():
         
         # Eliminar base de datos del disco duro
         shutil.rmtree(self.path + '/' + db + '/')
+        self.base_de_datos_actual = None if self.base_de_datos_actual == dbo else self.base_de_datos_actual
         self.log.info("Base de datos '"+str(db)+"' borrada.")
     
     # Crea el resultado de la información que es presentada
@@ -307,9 +308,9 @@ class ManejadorBaseDatos():
         return self.base_de_datos_actual.mostrar_columnas_de_tabla(tabla)
         
     # Quita dependencias rotas
-    def revisar(self):
+    def revision(self):
         if self.base_de_datos_actual != None:
-            self.base_de_datos_actual.revisar()
+            self.base_de_datos_actual.revision()
         
 class BaseDeDatos():
     # Contructor
@@ -348,65 +349,67 @@ class BaseDeDatos():
     
     # Carga la base de datos actual desde el archivo de metadados de la bd
     def cargar(self): 
-        #~ atributos = tab.getAtributos()
-        #~ restricciones = tab.getRestricciones()
         # Cargar desde el esquema
-        with open(self.schema_file) as esquema:
-            config = esquema.readlines()
-            
-        # Cargar la cantidad de tablas específicada
-        cantidad = self.getCantidadTablas()
-        
-        
-        #~ esquema.write('# Tabla: ' + tabla + '\n')
-        #~ esquema.write(tabla + '\n' )
-        #~ esquema.write('## Registros \n' )
-        #~ esquema.write(str(tab.getCantidadRegistros()) + ' \n')
-        #~ esquema.write('## Columnas \n' )
-        #~ esquema.write(str(len(atributos)) + '\n')
-        #~ # Guardar cada atributo
-        #~ for atr in atributos:
-            #~ esquema.write(atr[0] + '\n' )
-            #~ esquema.write(atr[1] + ('\t' + str(atr[2]) if atr[2] != None else '') + '\n' )
-        #~ esquema.write('## Restricciones \n' )
-        #~ esquema.write(str(len(restricciones)) + '\n')
-        #~ # Guardar cada restriccion
-        #~ for rest in restricciones:
-            #~ esquema.write(rest[0] + '\n') # Tipo
-            #~ esquema.write(rest[1] + '\n') # Nombre
-            #~ if rest[0] == 'PRIMARY KEY': # Si es llave primaria
-                #~ # Guardar lista id's
-                #~ ids = ''
-                #~ for Id in rest[2]:
-                    #~ ids += Id + ', '
-                #~ ids = ids[:-2]
-                #~ esquema.write(ids + '\n')
-            #~ elif rest[0] == 'FOREIGN KEY': # Si es llave foránea
-                #~ # Guardar lista id's locales
-                #~ ids = ''
-                #~ for Id in rest[2]:
-                    #~ ids += Id + ', '
-                #~ ids = ids[:-2]
-                #~ esquema.write(ids + '\n')
-               #~ 
-                #~ # Guardar tabla de referencia
-                #~ esquema.write(rest[3] + '\n')
-                #~ 
-                #~ # Guardar lista id's foraneos
-                #~ ids = ''
-                #~ for Id in rest[4]:
-                    #~ ids += Id + ', '
-                #~ ids = ids[:-2]
-                #~ esquema.write(ids + '\n')
-            #~ else: # Si es check
-                #~ # Guardar expresion del check
-                #~ esquema.write(rest[2] + '\n')
-        #~ esquema.write('## Dependen de la tabla \n' )
-        #~ # Guardar lista id's foraneos
-        #~ deps = ''
-        #~ for dep in tab.getDependientes():
-            #~ deps += dep + ', '
-        #~ esquema.write(deps[:-2] + '\n')
+        try:
+            with open(self.schema_file) as esquema:
+                config = map(lambda x : x[:-1], esquema.readlines())
+                
+            # Cargar la cantidad de tablas específicada
+            i = 1
+            for tabs in range(self.getCantidadTablas()):
+                # Crear tabla
+                tab = Tabla(config[i], self)
+                i += 2
+                # Registros
+                tab.setCantidadRegistros(int(config[i]))
+                i += 2
+                # Columnas
+                for cols in xrange(int(config[i])):
+                    i += 1
+                    nombre = config[i]
+                    i += 1
+                    l = config[i].split('\t')
+                    tipo = l[0]
+                    tamanio = None if len(l) < 2 else l[1]
+                    tab.agregar_columna(nombre, tipo, valor=tamanio)
+                # Cada restricción
+                i += 2
+                for rests in xrange(int(config[i])):
+                    i += 1
+                    if config[i] == 'PRIMARY KEY':
+                        i += 1
+                        nombre = config[i]
+                        i += 1
+                        keys = config[i].split(', ')
+                        tab.agregar_clave_primaria(nombre, keys)
+                    elif config[i] == 'FOREIGN KEY':
+                        i += 1
+                        nombre = config[i]
+                        i += 1
+                        local = config[i].split(', ')
+                        i += 1
+                        tabForanea = config[i]
+                        i += 1
+                        foranea = config[i].split(', ')
+                        tab.agregar_clave_foranea(nombre, local, tabForanea, foranea)
+                    else:
+                        i += 1
+                        nombre = config[i]
+                        i += 1
+                        exp = config[i]
+                        tab.agregar_chequeo(nombre, exp)
+                # Cada restricción
+                i += 2
+                dependientes = config[i].split(', ')
+                tab.setDependientes(dependientes)
+                
+                # Agregar tabla
+                self.tablas.append(tab)
+                
+                # Ir por la siguiente
+                i += 2
+        except IOError, msg:
+            pass            
         
     # Crea una nueva tabla en la base de datos actual.
     def agregar_tabla(self, tabla, listaDescripciones):
@@ -532,7 +535,7 @@ class BaseDeDatos():
         return self.tablas[self.tablas.index(tabla)]
         
     # Quita dependencias rotas
-    def revisar(self):
+    def revision(self):
         for tabla in self.tablas:
             for dep in tabla.getDependientes():
                 if not dep in self.tablas:
@@ -540,12 +543,12 @@ class BaseDeDatos():
                     
     
     # Guarda la tabla especificada en el archivo de metadatos
-    def escribir_tabla(self, tab)
+    def escribir_tabla(self, tab):
         atributos = tab.getAtributos()
         restricciones = tab.getRestricciones()
         with open(self.schema_file, 'a') as esquema:
-            esquema.write('# Tabla: ' + tabla + '\n')
-            esquema.write(tabla + '\n' )
+            esquema.write('# Tabla: ' + tab.getNombre() + '\n')
+            esquema.write(tab.getNombre() + '\n' )
             esquema.write('## Registros \n' )
             esquema.write(str(tab.getCantidadRegistros()) + ' \n')
             esquema.write('## Columnas \n' )
@@ -640,6 +643,10 @@ class Tabla():
     def getCantidadRegistros(self):
         return self.registros
     
+    # Colocar la cantidad de registros que contiene la tabla
+    def setCantidadRegistros(self, cant):
+        self.registros = cant
+
     # Obtener la base de datos a la cual pertene
     def getBaseDeDatos(self):
         return self.db
@@ -656,6 +663,10 @@ class Tabla():
     def getDependientes(self):
         return self.dependientes
         
+    # Guarda que hace referencia a esta tabla
+    def setDependientes(self, dependientes):
+        self.dependientes = dependientes
+    
     # Agregar la columna específicada
     def agregar_columna(self, columna, tipo, valor=None):
         # Verificar que la columna no exista
