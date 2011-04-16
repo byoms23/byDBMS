@@ -115,7 +115,7 @@ A continuacion se muestra la lista de instrucciones SQL aceptadas por byDBMS:
  * <exp> es una expresión booleana.
  * <listaIdent> es una lista de identificadores seprados por comas.
 
-Por el momento las instrucciones son case sensitive, por lo que deben estar escritas en mayúsculas (de lo contrario no serán instrucciones válidas). 
+Por el momento las instrucciones son case sensitive, por lo que deben estar escritas en mayúsculas (de lo contrario no serán instrucciones válidas). Tampoco se cuenta para soporte para comentarios, por lo que los archivos que sean cargados no deben tener comentarios en ellos.
 
 Cualquier texto ingresado no válido se mostrará un error.
 """

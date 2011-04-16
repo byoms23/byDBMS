@@ -7,7 +7,7 @@ README.txt
 byDBMS
 ======
 
-
+byDBMS es un sistema administrados de bases de datos. Reconoce una gramática pseudo-SQL similar a la que reconoce Post-Gree.
 
 --------------
 Requerimientos
@@ -15,15 +15,25 @@ Requerimientos
 
 * Python >= 2.6
   - byDBMS fue desarrollado sobre Python 2.6.
+  - Descarga:
+  - Instrucciones de instalación: 
 
 * LEPL >= 5.0
-  - byDBMS utiliza LEPL para el analisis sintactico de las consultas realizadas.
-
+  - byDBMS utiliza LEPL para el analisis sintactico de las consultas realizadas. 
+  - Descarga:
+  - Instrucciones de instalación: 
+  
+  NOTA: La version de Sakai no necesita instalarlo.
+  
 -----------------
 ¿Como utilizarlo?
 -----------------
 
-https://github.com/byoms23/byDBMS
+¿Cómo obtenerlo?
+El código fuente se puede encontrar en el repositorio oficial del proyecto https://github.com/byoms23/byDBMS . 
+
+¿Cómo inicio?
+Lo unico que se tiene que hacer para correr el programa es iniciar el archivo de console.py (descrito abajo), cuando se cumple con los requerimientos. 
 
 ----------
 console.py

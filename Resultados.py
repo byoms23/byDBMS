@@ -69,8 +69,3 @@ class Resultado():
     def addContenido(self, contenido):
         # Agregar contenido nuevo
         self.contenido.append(contenido)
-
-#~ x = Resultado()
-#~ x.setTitulos(["Titulo1", "Titulo 2"])
-#~ x.setContenido([["Contenido 1", "Contenido 2"], ["Contenido 3", "Contenido 4"], ["Contenido 5", "Contenido 6"]])
-#~ print x
