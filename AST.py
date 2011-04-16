@@ -76,7 +76,10 @@ class Restriccion(Node) : pass
 # 2.2) Clases para expresiones booleanas
 # --------------------------------------
 # Representa un valor aceptado
-class Valor(Node) : pass
+class Valor(Node) : 
+    # Convertir a texto (no sobreescribir arbol)
+    def toString(self):
+        return str(self[0])
 
 # Representa un identificador
 class Identificador(Valor): pass
@@ -88,20 +91,60 @@ class Int(Valor): pass
 class Float(Valor): pass
 
 # Representa un Char
-class Char(Valor) : pass
+class Char(Valor) : 
+    # Convertir a texto (no sobreescribir arbol)
+    def toString(self):
+        return "'" + str(self[0]) + "'"
 
 # Representa NULL
 class Null(Valor) : pass
 
 # Representa una expresión de  predicado
-class PredExp(Node) : pass
+class PredExp(Node) : 
+    # Convertir a texto (no sobreescribir arbol)
+    def toString(self):
+        if len(self) == 1:
+            return self[0].toString()
+        elif len(self) == 3:
+            return (self[0].toString() + " " + str(self[1]) + " " + self[2].toString())
 
 # Representa una expresión negadada
-class NotExp(Node) : pass
+class NotExp(Node) : 
+    # Convertir a texto (no sobreescribir arbol)
+    def toString(self):
+        if len(self) == 1:
+            return self[0].toString()
+        elif len(self) == 2:
+            return str(self[0]) + " " + self[1].toString()
 
 # Representa una expresión con AND's
-class AndExp(Node) : pass
+class AndExp(Node) : 
+    # Convertir a texto (no sobreescribir arbol)
+    def toString(self):
+        if len(self) == 1:
+            return self[0].toString()
+        elif len(self) == 3:
+            return self[0].toString() + " " + str(self[1]) + " " + self[2].toString()
 
 # Una expresión
-class Exp(Node): pass
+class Exp(Node):
+    # Convertir a texto (no sobreescribir arbol)
+    def toString(self):
+        if len(self) == 1:
+            return self[0].toString()
+        elif len(self) == 3:
+            return self[0].toString() + " " + str(self[1]) + " " + self[2].toString()
+
+def equivale(obj):
+    # Declavar objetos
+    dic = {
+            Identificador : None,
+            Int           : "INT",
+            Float         : "FLOAT",
+            Char          : "CHAR",
+            Null          : "NULL"
+          }
+    
+    # Buscar correspondencia
+    return dic[obj]
 

@@ -17,7 +17,7 @@ from Manejador import ManejadorBaseDatos
 from Excepciones import *
 
 # Carga la configuracion inicial del modulo
-def configure(tipo="info"):
+def configure(tipo='warning'):
     # Variables del modulo
     global path, log, manejador
     
@@ -71,7 +71,7 @@ def configure(tipo="info"):
         log.warning("Archivo de configuracion byDBMS.conf no existe.")
         
 # Configura el logger segun el nivel indicado por nivel_name.
-def configLogger(tipo='warning', archivo=None):
+def configLogger(tipo='', archivo=None):
     # Traer el log
     global log
     
@@ -87,18 +87,18 @@ def configLogger(tipo='warning', archivo=None):
               'error': logging.ERROR,
               'critical': logging.CRITICAL}
 
-    # Determinar el nivel
-    level = LEVELS.get(tipo, logging.NOTSET)
-    
     # Congiruar el nivel del log
     log.setLevel(logging.DEBUG)
-
     # Crear handler de archivo para guardar los mensajes
     fh = logging.FileHandler(archivo)
     fh.setLevel(logging.DEBUG)
+    # Determinar el nivel
+    tipo = tipo.lower()
+    nivel = LEVELS.get(tipo, logging.WARNING)
     # Crear el handler para la consola con el nivel ingresado
     ch = logging.StreamHandler()
-    ch.setLevel(level)
+    ch.setLevel(nivel)
+    
     # Establecer formatos predeterminados para el archivo de log y la consola
     formatter = logging.Formatter("%(asctime)s - %(name)s \n%(levelname)s - %(message)s")
     formatter2 = logging.Formatter("\n%(levelname)s: %(message)s")
@@ -108,12 +108,6 @@ def configLogger(tipo='warning', archivo=None):
     # Agregar handlers al logger
     log.addHandler(ch)
     log.addHandler(fh)
-
-    #~ log.debug('This is a debug message')
-    #~ log.info('This is an info message')
-    #~ log.warning('This is a warning message')
-    #~ log.error('This is an error message')
-    #~ log.critical('This is a critical error message')
 
 # Recorre el AST, realiza el análisis semántico
 def verificacion(ast):
@@ -213,40 +207,15 @@ def ejecutar(cadena):
         log.debug('Fin análisis semántico.')
     except lepl.stream.maxdepth.FullFirstMatchException, msg:
         log.debug('Fin análisis léxico y sintáctico.')
-        r = msg
-    #~ except DataBaseAlreadyExistException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
-    #~ except DataBaseNotExistException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
-    #~ except DataBaseNotSelectedException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
-    #~ except TableNotExistException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
-    #~ except TableAlreadyExistException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
-    #~ except ColumnException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
-    #~ except PrimaryKeyAlreadyException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
-    #~ except ConstraintNameAlreadyException, msg:
-        #~ r = msg
-        #~ log.debug('Fin análisis semántico.')
+        r = "ERROR: " + str(msg)
     except SemanticException, msg:
         manejador.revision()
-        r = msg
         log.debug('Fin análisis semántico.')
+        r = "ERROR: " + str(msg)
     #~ except Exception, msg:
         #~ self.log.error(msg)
         #~ r = "ERROR: Ha ocurrido un error inesperado, consulte el log para mayor información."
-        #~ log.debug('Fin análisis semántico.')
-        
+        #~ log.debug('Fin análisis semántico.')        
     
     # Devolver resultado de la ejecución
     return r
@@ -259,29 +228,16 @@ def ejecutarDesdeArchivo(archivo):
     r = ''
     
     # Abrir el archivo enviado y parsearlo (análisis léxico y sintáctico)
-    log.debug('Inicio análisis léxico y sintáctico.')
-    ast = Node()
     try:
         with open(archivo) as entrada:
-            #~ parser.get_parse_file()
-            #~ if parser is lepl.matchers.transform.Transform:
-                #~ print "lepl.matchers.transform.Transform"
-            #~ print parser.parse_file
-            ast = parser.parse_file(entrada)
-        ast = parser.parse_file(open(archivo))
+            lista = entrada.readlines()
+        
+        texto = ''
+        for l in lista:
+            texto += l
+        r = ejecutar(texto)
     except IOError, msg:
         r = "El archivo '"+archivo+"' no existe o no es un archivo valido."
-    except lepl.stream.maxdepth.FullFirstMatchException, msg:
-        r = msg
-        log.debug('Fin análisis léxico y sintáctico.')
-    except DataBaseAlreadyExistException, msg:
-        r = msg
-    
-    
-    # Verificar instrucciones (análisis semántico)
-    log.debug('Inicio análisis semántico.')
-    verificacion(ast)
-    log.debug('Fin análisis semántico.')
     
     # Devolver resultado de la operación
     return r

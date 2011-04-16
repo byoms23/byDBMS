@@ -6,6 +6,10 @@
 # Resultados.py
 # Contiene las clases de resultados que serán mostrados al usuario.
 
+# Importar modulos
+import AST
+
+# Clase encargada de mostrar resultados al usuario
 class Resultado():
     
     # Constructor de la clase
@@ -30,7 +34,7 @@ class Resultado():
         # Recorrer contenido
         for f in self.contenido:
             for c in f:
-                r += str(c) + '\t|\t'
+                r += (str(c) if not type(c) == AST.Exp else c.toString() )+ '\t|\t'
             r = r[:-3] + '\n'
         r += '='*tam + '\n'
         

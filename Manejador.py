@@ -7,7 +7,7 @@
 # Contine la información de los manejadores (tablas de símbolos) para las bases de datos y para las tablas.
 
 # Importar modulos
-import logging, os, shutil, copy, AST
+import logging, os, shutil, copy, AST, Parser
 from Excepciones import *
 from Resultados import *
 
@@ -186,7 +186,7 @@ class ManejadorBaseDatos():
             esquema.writelines(dataBases)
         
         # Eliminar base de datos del disco duro
-        shutil.rmtree(self.path + '/' + db + '/')
+        shutil.rmtree(self.path + db + '/')
         self.base_de_datos_actual = None if self.base_de_datos_actual == dbo else self.base_de_datos_actual
         self.log.info("Base de datos '"+str(db)+"' borrada.")
     
@@ -397,7 +397,7 @@ class BaseDeDatos():
                         i += 1
                         nombre = config[i]
                         i += 1
-                        exp = config[i]
+                        exp = Parser.buildExp().parse(config[i])[0]
                         tab.agregar_chequeo(nombre, exp)
                 # Cada dependiente
                 i += 2
@@ -411,6 +411,40 @@ class BaseDeDatos():
                 i += 2
         except IOError, msg:
             pass            
+        
+    # Agregar restriccion
+    def agregar_restriccion(self, tab, restriccion, mostrar=False):
+        if type(restriccion) == AST.Columna:
+            # Revisar cada restricción corta
+            for restriccionCorta in restriccion[2]:
+                tipo = restriccionCorta[0] if restriccionCorta[0] == 'CHECK' else (
+                        "PRIMARY KEY" if restriccionCorta[0] == 'PRIMARY' else "FOREIGN KEY")
+                nombre = tab.generar_nombre(tipo)
+                if tipo == 'CHECK':
+                    tab.agregar_chequeo(nombre, restriccionCorta[1], requerido=restriccion[0])
+                elif tipo == 'PRIMARY KEY':
+                    tab.agregar_clave_primaria(nombre, [restriccion[0]])
+                else:
+                    tab.agregar_clave_foranea(nombre, [restriccion[0]], restriccionCorta[1], [restriccionCorta[2]])
+                
+                if mostrar:
+                    # Log
+                    self.log.info("Tabla '"+str(tab.getNombre())+"' modificada: Se agregó restricción '"+str(nombre)+"'.")
+        else:
+            # Agregar alguna de las restricciones validas
+            tipo = restriccion[0] if restriccion[0] == 'CHECK' else (restriccion[0] + " KEY")
+            nombre = restriccion[1]
+            if tipo == 'CHECK':
+                tab.agregar_chequeo(nombre, restriccion[2])
+            elif tipo == 'PRIMARY KEY':
+                tab.agregar_clave_primaria(nombre, restriccion[2])
+            else:
+                tab.agregar_clave_foranea(nombre, restriccion[2], restriccion[3], restriccion[4])
+                
+            if mostrar:
+                # Log
+                self.log.info("Tabla '"+str(tab.getNombre())+"' modificada: Se agregó restricción '"+str(nombre)+"'.")        
+        
         
     # Crea una nueva tabla en la base de datos actual.
     def agregar_tabla(self, tabla, listaDescripciones):
@@ -525,7 +559,6 @@ class BaseDeDatos():
                     t.removeDependiente(idAntiguo)
                     t.addDependiente(idNuevo)
                 except ValueError, msg:
-                    print msg
                     pass
         
         # Renombrar en el archivo de metadatos
@@ -536,7 +569,71 @@ class BaseDeDatos():
         
     # Aplica el conjunto de acciones de listaAcciones a tabla.
     def alterar_estructura_de_tabla(self, tabla, listaAcciones):
-        pass # TODO
+        # Revisar si la tabla existe
+        tabla = self.verificar_tabla(tabla)
+        
+        # Copiar tabla para realizar cambios
+        clone = tabla.__deepcopy__()
+        clone.setNombre(clone.getNombre() + '_clone')
+        # Actuales
+        antiguos = [x[3] for x in tabla.getRestricciones() if x[0] == "FOREIGN KEY"]
+        
+        # Realizar cada una de las acciones que se solicitan
+        for accion in listaAcciones:
+            if accion[0] == 'ADD' and accion[1] == 'COLUMN':
+                # Agregar columna
+                clone.agregar_columna(accion[2][0], accion[2][1][0], (accion[2][1][1] if accion[2][1][0] == 'CHAR' else None))
+                # Log
+                self.log.info("Tabla '"+str(clone.getNombre())+"' modificada: Se agregó columna '"+str(accion[2][0])+"'.")        
+                
+                # Agregar restricciones cortas
+                self.agregar_restriccion(clone, accion[2], mostrar = True)
+            elif accion[0] == 'ADD':
+                # Agregar restriccion
+                self.agregar_restriccion(clone, accion[1], mostrar = True)
+            elif accion[0] == 'DROP' and accion[1] == 'COLUMN':
+                clone.quitar_atributo(accion[2])
+                
+                # Log
+                self.log.info("Tabla '"+str(clone.getNombre())+"' modificada: Se quitó la columna '"+str(accion[2])+"'.")        
+                
+            elif accion[0] == 'DROP' and accion[1] == 'CONSTRAINT':
+                clone.quitar_restriccion(accion[2])
+                
+                # Log
+                self.log.info("Tabla '"+str(clone.getNombre())+"' modificada: Se quitó la restricción '"+str(accion[2])+"'.")
+                
+            #~ # Revision
+            #~ self.log.debug("Clone")
+            #~ self.log.debug(clone.getAtributos())
+            #~ self.log.debug(clone.getRestricciones())
+            #~ self.log.debug("Tabla")
+            #~ self.log.debug(tabla.getAtributos())
+            #~ self.log.debug(tabla.getRestricciones())
+                
+        # Eliminar base de datos del manejador
+        self.tablas.remove(tabla)
+        self.tablas.append(clone)
+
+        # Notificar a las tablas de las cuales ya no se hace referencia
+        actuales = [x[3] for x in clone.getRestricciones() if x[0] == "FOREIGN KEY"]
+        for t in [x for x in antiguos if not x in actuales]:
+            tab = self.verificar_tabla(t)
+            tab.removeDependiente(tabla.getNombre())
+        
+        # Cambair dependencias
+        for t in self.tablas:
+            if not t is clone:
+                t.actualizar_dependencia(clone.getNombre(), tabla.getNombre())
+                try:
+                    t.removeDependiente(clone.getNombre())
+                    t.addDependiente(tabla.getNombre())
+                except ValueError, msg:
+                    pass
+        
+        # Renombrar en el archivo de metadatos
+        clone.setNombre(tabla.getNombre())
+        self.reemplazar_tabla_metadatos(tabla, clone)
         
     # Eliminar la tabla descrita por tabla
     def eliminar_tabla(self, tabla):
@@ -565,7 +662,6 @@ class BaseDeDatos():
                 t.removeDependiente(tabla.getNombre())
             except ValueError, msg:
                 pass
-            
             
         # Agregar el archivo al archivo de metadatos del manejador
         self.manejador.actualizar_base_de_datos(self)
@@ -677,7 +773,7 @@ class BaseDeDatos():
                 resp.append(ids + '\n')
             else: # Si es check
                 # Guardar expresion del check
-                resp.append(rest[2] + '\n')
+                resp.append(rest[2].toString() + '\n')
         resp.append('## Tablas que dependen de esta tabla \n' )
         # Guardar lista id's foraneos
         deps = ''
@@ -782,7 +878,17 @@ class Tabla():
     
     # Copia profunda de la tabla
     def __deepcopy__(self):
-        pass # TODO
+        # Crear variables
+        resp = Tabla(self.nombre, self.db)
+        
+        # Clonar propiedades más importantes
+        resp.setAtributos(copy.copy(self.atributos))
+        resp.setRestricciones(copy.copy(self.restricciones))
+        resp.setDependientes(copy.copy(self.dependientes))
+        resp.setCantidadRegistros(copy.copy(self.registros))
+        
+        # Devolver nuevo objeto
+        return resp
         
     # Obtener el nombre de la tabla
     def getNombre(self):
@@ -792,13 +898,24 @@ class Tabla():
     def setNombre(self, nombre):
         self.nombre = nombre
         
+        self.log  = logging.getLogger('byDBMS.ManejadorBaseDatos.BaseDeDatos('+self.db.getNombre()+').Tabla('+str(self.nombre)+')')
+        self.path = self.db.getPath() +  self.nombre + '.tbl'
+        
     # Obtener los atributos de la tabla
     def getAtributos(self):
         return self.atributos
         
+    # Obtener los atributos de la tabla
+    def setAtributos(self, atributos):
+        self.atributos = atributos
+
     # Obtener las restricciones de la tabla
     def getRestricciones(self):
         return self.restricciones
+    
+    # Colocar las restricciones de la tabla
+    def setRestricciones(self, restricciones):
+        self.restricciones = restricciones
     
     # Obtener la cantidad de registros que contiene la tabla
     def getCantidadRegistros(self):
@@ -883,11 +1000,11 @@ class Tabla():
         # Crear nuevo nombre de restricción
         while not ret:
             if restriccion == 'CHECK':
-                a = "CH_%.3i" % contador 
+                a = "CH%.3i" % contador 
             elif restriccion == 'PRIMARY KEY':
-                a = "PK_%.3i" % contador 
+                a = "PK%.3i" % contador 
             else:
-                a = "FK_%.3i" % contador
+                a = "FK%.3i" % contador
             if not self.existe_nombre(a):
                 ret = a
             contador += 1
@@ -997,6 +1114,7 @@ class Tabla():
         tiposLocales = self.tipo_de_atributos(listaLocal)
         tiposForaneos = tabForanea.tipo_de_atributos(listaForanea)
         primariasForaneas = tabForanea.get_clave_primaria()
+        tempPrimariasForaneas = copy.deepcopy(primariasForaneas)
         for i in xrange(len(tiposLocales)):
             # Revisar el tipo
             if tiposLocales[i] != tiposForaneos[i]:
@@ -1005,19 +1123,49 @@ class Tabla():
                 raise ex
                 
             # Revisar que sea parte de la llame primaria
-            if not listaForanea[i] in primariasForaneas:
+            if not listaForanea[i] in tempPrimariasForaneas:
                 ex = ColumnIsNotPrimaryKeyException(listaForanea[i], tabForanea)
                 self.log.error(ex)
                 raise ex
+            else:
+                tempPrimariasForaneas.remove(listaForanea[i])
         
-        # Agregar clave primaria
+        # Revisar que la referencia a la llave primaria (foranea) se completa
+        if(len(tempPrimariasForaneas) > 0):
+            ex = ColumnIsPrimaryKeyException(nombre, self, tempPrimariasForaneas[0], tabForanea)
+            self.log.error(ex)
+            raise ex
+        
+        # Agregar clave foranea
         self.restricciones.append(["FOREIGN KEY", nombre, listaLocal, tabla, listaForanea])
         tabForanea.addDependiente(self.getNombre())
         self.log.debug("Restricción agregada: " + str(self.restricciones[-1]) + ".")
         
     # Agregar un chequeo
     def agregar_chequeo(self, nombre, exp, requerido = None):
-        pass # TODO
+        # Formato de los nombres
+        nombre = nombre.lower()
+        requerido = requerido.lower() if requerido != None else None
+        
+        # Revisar si el nombre de restricción ya existe
+        if self.existe_nombre(nombre):
+            ex = ConstraintNameAlreadyException(nombre, self)
+            self.log.error(ex)
+            raise ex
+            
+        # Revisar que la expresion sea de tipo booleana
+        t, dic = self.evaluarExpresion(exp)
+        
+        # Revisar si es requerido el campo/atributo
+        if requerido != None:
+            if not requerido in dic[requerido]:
+                ex = ColumnNotUsedException(requerido, nombre, self)
+                self.log.error(ex)
+                raise ex
+        
+        # Agregar clave foranea
+        self.restricciones.append(["CHECK", nombre, exp])
+        self.log.debug("Restricción agregada: " + str(self.restricciones[-1]) + ".")
         
     # Muestra las columnas de la tabla descrita en tabla.
     def mostrar_columnas(self): 
@@ -1046,3 +1194,108 @@ class Tabla():
 
         # Regresar respuesta
         return resp
+        
+    # Evaluar tipos
+    def evaluarExpresion(self, exp):
+        if type(exp) in [AST.Exp, AST.AndExp, AST.NotExp]:
+            # Evaluar primer expresión
+            t, d = self.evaluarExpresion(exp[0])
+            if(len(exp) == 3):
+                # Evaluar segunda expresión
+                t2, d2 = self.evaluarExpresion(exp[2])
+                d.extend(d2)
+            return t, d
+            
+        elif type(exp) == AST.PredExp:
+            if (len(exp) == 1):
+                # Verificar que el tipo no sea nulo
+                return self.evaluarExpresion(exp[0])
+            elif(len(exp) == 3):
+                op = exp[1]
+                t1, d1 = self.evaluarExpresion(exp[0])
+                t2, d2 = self.evaluarExpresion(exp[2])
+                
+                # Revisar segun operadores validos
+                if t1 == "NULL" and op in ['=', '!=', '<>']:
+                    pass
+                elif t2 == "NULL" and op in ['=', '!=', '<>']:
+                    pass
+                elif t1 == t2:
+                    pass    
+                elif t1 == "DATE" and t2 == "CHAR":
+                    pass
+                elif t1 == "CHAR" and t2 == "DATE":
+                    pass
+                elif t1 == "INT" and t2 == "FLOAT":
+                    pass
+                elif t1 == "FLOAT" and t2 == "INT":
+                    pass
+                else:
+                    # Caualquier otra combinación es invalida
+                    ex = TypeMistmatchException(exp[0].toString(), t1, op, exp[2].toString(), t2, self)
+                    self.log.error(ex)
+                    raise ex
+                
+                # Devolver tipo e identificadores
+                d1.extend(d2)
+                return "BOOL", d1
+            
+        elif type(exp) == AST.Identificador:
+            # Revisar que sea un identificador valido
+            atributo = exp.toString().lower()
+            self.contiene_atributos([atributo])
+            
+            # Devolver tipo
+            tipo = self.tipo_de_atributos([atributo])[0]
+            return tipo, [atributo]
+        else:
+            # Devolver tipo y diccionario vacio
+            return (AST.equivale(type(exp)), [])
+            
+    # Quitar un atributo
+    def quitar_atributo(self, idAtributo):
+        # Declavar variables
+        idAtributo = idAtributo.lower()
+        
+        # Buscar restriccion
+        for rest in self.restricciones:
+            if rest[0] == "PRIMARY KEY":
+                if idAtributo in rest[2]:
+                    ex = ColumnInConstraintException(idAtributo, rest[1], self)
+                    self.log.error(ex)
+                    raise ex
+            elif rest[0] == "FOREIGN KEY":
+                if idAtributo in rest[2] or idAtributo in rest[4]:
+                    ex = ColumnInConstraintException(idAtributo, rest[1], self)
+                    self.log.error(ex)
+                    raise ex
+            else:
+                tipo, atributos = self.evaluarExpresion(rest[2])
+                if idAtributo in atributos:
+                    ex = ColumnInConstraintException(idAtributo, rest[1], self)
+                    self.log.error(ex)
+                    raise ex
+                
+        # Quitar el atributo especificado
+        for atributo in self.atributos:
+            if atributo[0] == idAtributo:
+                self.atributos.remove(atributo)
+        
+    # Quitar una restriccion
+    def quitar_restriccion(self, idRestriccion):
+        # Declarar variables
+        idRestriccion = idRestriccion.lower()
+        encontrado = False
+        
+        # Buscar restriccion
+        for rest in self.restricciones:
+            if rest[1] == idRestriccion:
+                self.restricciones.remove(rest)
+                encontrado = True
+                break
+        
+        # Verificar que idRestriccion exista
+        if not encontrado:
+            ex = ConstraintNotExistsException(idRestriccion, self) 
+            self.log.error(ex)
+            raise ex
