@@ -513,6 +513,10 @@ class BaseDeDatos():
         # Renombrar la tabla en el disco duro
         os.rename(self.getPath() + idAntiguo + '.tbl', self.getPath() + idNuevo + '.tbl')
         
+        # Eliminar base de datos del manejador
+        tab = self.tablas[self.tablas.index(anterior)]
+        tab.setNombre(idNuevo)
+
         # Cambair dependencias
         for t in self.tablas:
             if not t is tab:
@@ -524,10 +528,6 @@ class BaseDeDatos():
                     print msg
                     pass
         
-        # Eliminar base de datos del manejador
-        tab = self.tablas[self.tablas.index(anterior)]
-        tab.setNombre(idNuevo)
-
         # Renombrar en el archivo de metadatos
         self.reemplazar_tabla_metadatos(anterior, tab)
         
@@ -621,58 +621,11 @@ class BaseDeDatos():
     
     # Guarda la tabla especificada en el archivo de metadatos
     def escribir_tabla(self, tab):
-        atributos = tab.getAtributos()
-        restricciones = tab.getRestricciones()
+        # Declarar variables
+        lista = self.crear_lista_tabla(tab)
+        
         with open(self.schema_file, 'a') as esquema:
-            esquema.write('# Tabla: ' + tab.getNombre() + '\n')
-            esquema.write(tab.getNombre() + '\n' )
-            esquema.write('## Registros \n' )
-            esquema.write(str(tab.getCantidadRegistros()) + ' \n')
-            esquema.write('## Columnas \n' )
-            esquema.write(str(len(atributos)) + '\n')
-            # Guardar cada atributo
-            for atr in atributos:
-                esquema.write(atr[0] + '\n' )
-                esquema.write(atr[1] + ('\t' + str(atr[2]) if atr[2] != None else '') + '\n' )
-            esquema.write('## Restricciones \n' )
-            esquema.write(str(len(restricciones)) + '\n')
-            # Guardar cada restriccion
-            for rest in restricciones:
-                esquema.write(rest[0] + '\n') # Tipo
-                esquema.write(rest[1] + '\n') # Nombre
-                if rest[0] == 'PRIMARY KEY': # Si es llave primaria
-                    # Guardar lista id's
-                    ids = ''
-                    for Id in rest[2]:
-                        ids += Id + ', '
-                    ids = ids[:-2]
-                    esquema.write(ids + '\n')
-                elif rest[0] == 'FOREIGN KEY': # Si es llave foránea
-                    # Guardar lista id's locales
-                    ids = ''
-                    for Id in rest[2]:
-                        ids += Id + ', '
-                    ids = ids[:-2]
-                    esquema.write(ids + '\n')
-                   
-                    # Guardar tabla de referencia
-                    esquema.write(rest[3] + '\n')
-                    
-                    # Guardar lista id's foraneos
-                    ids = ''
-                    for Id in rest[4]:
-                        ids += Id + ', '
-                    ids = ids[:-2]
-                    esquema.write(ids + '\n')
-                else: # Si es check
-                    # Guardar expresion del check
-                    esquema.write(rest[2] + '\n')
-            esquema.write('## Tablas que dependen de esta tabla \n' )
-            # Guardar lista id's foraneos
-            deps = ''
-            for dep in tab.getDependientes():
-                deps += dep + ', '
-            esquema.write(deps[:-2] + '\n')
+            esquema.writelines(lista)
     
     # Guarda la tabla especificada en el archivo de metadatos
     def crear_lista_tabla(self, tab):
@@ -930,11 +883,11 @@ class Tabla():
         # Crear nuevo nombre de restricción
         while not ret:
             if restriccion == 'CHECK':
-                a = "CH_%.10i" % contador 
+                a = "CH_%.3i" % contador 
             elif restriccion == 'PRIMARY KEY':
-                a = "PK_%.10i" % contador 
+                a = "PK_%.3i" % contador 
             else:
-                a = "FK_%.10i" % contador
+                a = "FK_%.3i" % contador
             if not self.existe_nombre(a):
                 ret = a
             contador += 1
