@@ -113,7 +113,16 @@ def build():
              | (Token('DROP') & Token("CONSTRAINT") & identi )
              ) > Node
     listaAccion += accion & (~txt(',') & accion)[:] > Node
-
+    
+    # TODO Definición para INSERT 
+    
+    # TODO Definición para UPDATE 
+    
+    # TODO Definición para DELETE 
+    
+    # TODO Definicion para SELECT 
+    
+    
     # Definir SQL
     consultaSql = Star( (dataBaseCreate 
                         | dataBaseAlter 
