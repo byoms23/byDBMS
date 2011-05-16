@@ -7,25 +7,24 @@
 # Contiene a la consola interactiva
 
 # Importar modulos necesarios
-import logging
-import sys
+import logging, sys, cmd 
 import byDBMS
 
-# Verificar si se debe activar el modo DEBUG
-if len(sys.argv) > 1:
-    level_name = sys.argv[1]
-    byDBMS.configure(tipo=level_name)
-else:
-    byDBMS.configure()
+# Función que pregunta al usuario si desea eliminar la base de datos
 
-# Crear log de la consola
-log = logging.getLogger('byDBMS.console')    
+# Crear clase para la consola interactiva
+class Console(cmd.Cmd, object):
 
-# Definir funciones especiales para la consola
-# ayuda: Devuelve el mensaje de ayuda que se le muestra al usuario. Contiene las instrucciones acceptadas por 
-def ayuda():
-    return """
-¡Bienvenido a byDBMS 0.1!
+    # Crear log de la consola.
+    log = logging.getLogger('byDBMS.console')    
+    prompt = 'byDBMS> '
+    
+    def do_ayuda(self, line):
+        """
+        Sintaxis: ayuda
+        Devuelve el mensaje de ayuda que se le muestra al usuario. Contiene las instrucciones acceptadas por la consola.
+        """
+        print """¡Bienvenido a byDBMS 0.1!
 
 Esta es la consola interactiva del manejador de bases de datos byDBMS. La consola interactiva puede ser activada en uno de varios niveles de ejecución, cuando se invoca a la consola (mediante python console.py) se le puede agregar una de las siguientes opciones: 
  *    debug     muestra hasta mensajes internos de depuración.
@@ -48,10 +47,13 @@ A continuacion se muestra la lista de instrucciones aceptadas por la consola:
 Cualquier otro texto ingresado será tratado como un comando SQL (ver 'instrucciones' para ver el conjunto de comandos SQL reconocidos).
 """
     
-# instrucciones: Devuelve 
-def instrucciones():
-    return """
-¡Bienvenido a byDBMS 0.1!
+    # instrucciones: 
+    def do_instrucciones(self, line):
+        """
+        Sintaxis: instrucciones
+        Muestra el conjunto de instrucciones SQL que son reconocidas por byDBMS.
+        """
+        print """¡Bienvenido a byDBMS 0.1!
 
 A continuacion se muestra la lista de instrucciones SQL aceptadas por byDBMS:
  =====================
@@ -119,12 +121,44 @@ Por el momento las instrucciones son case sensitive, por lo que deben estar escr
 
 Cualquier texto ingresado no válido se mostrará un error.
 """
-
-# Crear variable de entrada
-entrada = ''
-
-# Mensaje de bienvenida
-print """=============================================================== 
+    
+    def do_salir(self, line):
+        """
+        Sintaxis: salir
+        Abandona byDBMS de forma segura.
+        """
+        print 
+        print "¡¡¡ Adios !!!"
+        print 
+        return True
+    
+    do_EOF = do_salir
+    
+    def do_cargar(self, line):
+        """
+        Sintaxis: cargar <archivo>
+        Abre el archivo especificado en <archivo> e intenta ejecutar los comandos SQL que se encuentren en él.
+        """
+        print byDBMS.ejecutarDesdeArchivo(line)
+    
+    def default(self, line):
+        print byDBMS.ejecutar(line)
+    
+    def emptyline(self):
+        pass
+        
+# Revisar si el modulo se importado o se ha ejecutado directamente
+if __name__ == '__main__':
+    # Verificar si se debe activar el modo DEBUG
+    if len(sys.argv) > 1:
+        level_name = sys.argv[1]
+        byDBMS.configure(tipo=level_name)
+    else:
+        byDBMS.configure()
+        
+    
+    # Mensaje de bienvenida
+    men = """=============================================================== 
  /$$                 /$$$$$$$  /$$$$$$$  /$$      /$$  /$$$$$$ 
 | $$                | $$__  $$| $$__  $$| $$$    /$$$ /$$__  $$
 | $$$$$$$  /$$   /$$| $$  \ $$| $$  \ $$| $$$$  /$$$$| $$  \__/
@@ -137,24 +171,12 @@ print """===============================================================
           |  $$$$$$/                                           
            \______/                                            
 ===============================================================
-Versión 0.1
+Versión 0.2
 Escriba 'ayuda' e 'instrucciones' para mayor información.
 ===============================================================
 """
-
-# Ciclo principal
-while entrada.lower() != 'salir':
-    # Solicitar nueva entrada
-    entrada =  raw_input("byDBMS> ").strip()
     
-    # Evaluar entrada ingresada
-    if entrada.lower() == 'ayuda':
-        print ayuda()
-    elif entrada.lower() == 'instrucciones':
-        print instrucciones()
-    elif entrada.lower() == 'salir':
-        print "¡¡¡ Adios !!!"
-    elif entrada.lower().startswith('cargar '):
-        print byDBMS.ejecutarDesdeArchivo(entrada[7:].strip())
-    else:
-        print byDBMS.ejecutar(entrada)
+    # Crear nueva consola
+    c = Console()
+    c.cmdloop(men)
+    
