@@ -4,17 +4,16 @@
 # Byron Orlando Morales Sequen (08414)
 # Fecha de creacion: domingo, 10 de abril de 2011
 # byDBMS.py
-# Contiene el core del manejador de datos
 
+# Contiene el core del manejador de datos
 # Importar modulos, funciones y clases
-import logging
-import sys, os
-import Parser
+import logging, sys, os
 import lepl
-from lepl import Node
-from AST import *
-from Manejador import ManejadorBaseDatos
-from Excepciones import *
+#~ import manejador
+#~ from manejador.analizadorSintactico import Parser as Parser
+#~ from manejador import ManejadorBaseDatos
+from manejador import *
+from manejador.analizadorSintactico.AST import *
 
 # Carga la configuracion inicial del modulo
 def configure(tipo='warning'):
@@ -181,6 +180,13 @@ def verificacion(ast):
         log.debug('Se detectó una consulta SQL: Mostrar columnas de una tabla.')
         r = manejador.mostrar_columnas_de_tabla(ast[0].lower())
     
+    # Verificar cuando se pide ingresar un registro
+    elif type(ast) == RowInsert:
+        log.debug('Se detectó una consulta SQL: Insertar registros en una tabla.')
+        atributos = ast[1] if len(ast) > 2 else None
+        
+        r = manejador.agregar_registro_a_tabla(ast[0].lower(),atributos,ast[-1])
+        
     # Devolver el resultado
     return r
 
