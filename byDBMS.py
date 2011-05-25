@@ -180,13 +180,26 @@ def verificacion(ast):
         log.debug('Se detectó una consulta SQL: Mostrar columnas de una tabla.')
         r = manejador.mostrar_columnas_de_tabla(ast[0].lower())
     
-    # Verificar cuando se pide ingresar un registro
+    # Verificar cuando se pide ingresar registros
     elif type(ast) == RowInsert:
         log.debug('Se detectó una consulta SQL: Insertar registros en una tabla.')
         atributos = ast[1] if len(ast) > 2 else None
         
         r = manejador.agregar_registro_a_tabla(ast[0].lower(),atributos,ast[-1])
         
+    # Verificar cuando se pide actualizar registros
+    elif type(ast) == RowUpdate:
+        log.debug('Se detectó una consulta SQL: Insertar registros en una tabla.')
+        atributos = ast[1] if len(ast) > 2 else None
+        
+        #~ r = manejador.agregar_registro_a_tabla(ast[0].lower(),atributos,ast[-1])
+
+    # Verificar cuando se pide eliminar registros
+    elif type(ast) == RowDelete:
+        log.debug('Se detectó una consulta SQL: Insertar registros en una tabla.')
+        atributos = ast[1] if len(ast) > 2 else None
+        
+        r = manejador.agregar_registro_a_tabla(ast[0].lower(),atributos,ast[-1])
     # Devolver el resultado
     return r
 

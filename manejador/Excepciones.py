@@ -342,7 +342,7 @@ class ValueNotUniqueForPrimaryKeyException(SemanticException):
         valores = formar_texto(self.v)
         return "Violación de clave primaria, en la tabla '"+self.t+"' se espera(n) que el(los) atributo(s) '"+atributos+"' sea(n) unico(s), el(los) valor(es) '"+valores+"' ya se encuentran en la tabla."
 
-# Excepción por violación de clave primaria (Valores repetidos)
+# Excepción por violación de clave primaria foranea (valores no existentes)
 class ValueNotExistsForForeignKeyException(SemanticException):
     # Constructor
     def __init__(self, tabla, expected, tablaForanea, given, values):
@@ -358,3 +358,19 @@ class ValueNotExistsForForeignKeyException(SemanticException):
         valores = formar_texto(self.v)
         aForaneos = formar_texto(self.g)
         return "Violación de llave fóranea, para que el(los) valor(es) '"+valores+"' pertenezca(n) al(a los) atributo(s) '"+atributos+"' en la tabla '"+self.t+"', deben existir en los atributos '"+aForaneos+"' de la tabla '"+self.tf+"'."
+
+# Excepción por violación de clave primaria foranea (valores no existentes)
+class ValueNotTheCheckException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, expected, restriccion, expresion, values):
+        self.t = tabla
+        self.e = expected
+        self.r = restriccion
+        self.ex = expresion
+        self.v = values
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        atributos = formar_texto(self.e)
+        valores = formar_texto(self.v)
+        return "Violación de restricción, para que el(los) valor(es) '"+valores+"' pertenezca(n) al(a los) atributo(s) '"+atributos+"' en la tabla '"+self.t+"', debe cumplir la restricción '"+self.r+"' ("+self.ex+")."

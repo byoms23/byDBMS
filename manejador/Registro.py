@@ -151,9 +151,93 @@ class Registro(dict):
                 
             elif restriccion[0] == "CHECK":
                 # TODO Revisar Check
+                if not self.evaluarExpresion(restriccion[2]):
+                    ex = ValueNotTheCheckException(self.tabla.getNombre(), self.keys(), restriccion[1], restriccion[2].toString(), self.values())
+                    self.log.error(ex)
+                    raise ex                    
+                    
                 
+    # Revisar expresiones (valor)
+    def evaluarExpresion(self, exp):
+        t = type(exp)
+        # Evaluar OR
+        if t == AST.Exp: #, AST.AndExp, AST.NotExp]:
+            # Evaluar las expresiones
+            if(len(exp) == 1):
+                return self.evaluarExpresion(exp[0])
+            else:
+                return self.evaluarExpresion(exp[0]) or self.evaluarExpresion(exp[2])
+        # Evaluar AND
+        elif t == AST.AndExp:
+            # Evaluar las expresiones
+            if(len(exp) == 1):
+                return self.evaluarExpresion(exp[0])
+            else:
+                return self.evaluarExpresion(exp[0]) and self.evaluarExpresion(exp[2])            
+        # Evaluar NOT
+        elif t == AST.NotExp:
+            # Evaluar las expresiones
+            if(len(exp) == 1):
+                return self.evaluarExpresion(exp[0])
+            else:
+                return not self.evaluarExpresion(exp[1])
+        # Evaluar operandos
+        elif type(exp) == AST.PredExp:
+            if (len(exp) == 1):
+                # Verificar que el tipo no sea nulo
+                return self.evaluarExpresion(exp[0])
+            elif(len(exp) == 3):
+                op = exp[1]
+                v1 = self.evaluarExpresion(exp[0])
+                v2 = self.evaluarExpresion(exp[2])
+                r = False
                 
-    # Revisar expresiones
-    def revisar_expresion(self, exp):
-        return False
-        
+                # Revisar el tipo de los datos 
+                if type(v1) == str and type(v2) == datetime.date:
+                    v2 = str(v2)
+                elif type(v2) == str and type(v1) == datetime.date:
+                    v1 = str(v1)
+                
+                # Revisar segun operadores validos
+                if op == '=':
+                    r = v1 == v2
+                elif op == '!=' or op == '<>':
+                    r = v1 != v2
+                elif op == '>':
+                    r = v1 > v2
+                elif op == '>=':
+                    r = v1 >= v2
+                elif op == '<':
+                    r = v1 < v2
+                elif op == '<=':
+                    r = v1 <= v2
+                
+                # Devolver tipo e identificadores
+                return r
+                
+        elif t == AST.Identificador:
+            # Devolver valor
+            print self[exp[0].lower()]
+            return self[exp[0].lower()]
+        elif t == AST.Int:
+            # Devolver valor
+            return int(exp[0])
+        elif t == AST.Fecha:
+            # Devolver valor
+            fecha = exp[0].split('-')
+            fecha = map(lambda x: int(x), fecha)
+            return datetime.date(fecha[0], fecha[1], fecha[2])
+        elif t == AST.Float:
+            # Devolver valor
+            return float(exp[0])
+        elif t == AST.Null:
+            # Devolver valor
+            return None
+        elif t == AST.Char:
+            # Devolver valor
+            return str(exp[0])
+        else:
+            # Devolver tipo y diccionario vacio
+            print exp
+            print t
+            return (AST.equivale(t), [])

@@ -163,16 +163,18 @@ class Tabla():
         ret = None
         
         # Crear nuevo nombre de restricción
-        while not ret:
+        while ret == None:
             if restriccion == 'CHECK':
-                a = "CH%.3i" % contador 
+                a = self.nombre + "_CH%.3i" % contador 
             elif restriccion == 'PRIMARY KEY':
-                a = "PK%.3i" % contador 
+                a = self.nombre + "_PK%.3i" % contador 
             else:
-                a = "FK%.3i" % contador
+                a = self.nombre + "_FK%.3i" % contador
+            a = a.lower()
             if not self.existe_nombre(a):
                 ret = a
-            contador += 1
+            else:
+                contador += 1
             
         return ret
         

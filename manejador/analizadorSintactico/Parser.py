@@ -40,6 +40,7 @@ def buildExp():
     # Definir tokens    
     identi = Token('[a-zA-Z][0-9a-zA-Z]*') > Identificador
     integer = Token(Integer()) > Int
+    fecha = fecha = Token("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") > Fecha
     real = Token(Real()) > Float
     null = Token("NULL") > Null
     s = Token("'[A-Za-z0-9]*'") > Char
@@ -49,6 +50,7 @@ def buildExp():
             | integer
             | real
             | null 
+            | fecha
             | s )
     
     predExp = ( (value & Token("=")  & value) 
