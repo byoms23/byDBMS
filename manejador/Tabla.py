@@ -467,6 +467,9 @@ class Tabla():
     # Método de registros
     # ==================================================================
     
+    # Cargar registros desde el disco duro
+    def cargar_registros(self):
+    
     # Agregar un registro a la tabla seleccionada
     def agregar_registro(self, atributos, valoresList):
         # Revisar si específico atributos
@@ -529,9 +532,13 @@ class Tabla():
                 
             # Revisar restricciones para cada registro 
             r.validar_restricciones()
-            # Agregar registro
+            # Agregar registro a la tabla (memoria)
             self.registros.append(r)
-            # TODO Guardar en el disco duro
+            # TODO # Agregar registro a la tabla (disco duro)
+            
+            linea = self.formar_texto(r)
+            with open(self.db.get_table_path(self.nombre), 'a') as archivo:
+                archivo.write(linea)
             
             print r
             print self.registros
@@ -539,3 +546,17 @@ class Tabla():
         
         # TODO Agregar registros a la tabla (memoria y disco duro).
         
+    # Dar formato a un registro
+    def formar_texto(self, registro, separador = '|'):
+        r = ''
+        for atributo in self.atributos:
+            print atributo
+            if atributo[1] == 'CHAR' or atributo[1] == 'DATE':
+                r += "'" + str(registro[atributo[0]]) + "'"
+            else:
+                r += str(registro[atributo[0]]) 
+            r += separador 
+        s = (-1 * len(separador))
+        if len(r) >= (-1 * s):
+            r = r[:s] + '\n'
+        return r

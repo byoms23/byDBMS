@@ -570,3 +570,5 @@ class BaseDeDatos():
         # Regresar respuesta
         return self.tablas[self.tablas.index(tabla)].agregar_registro(atributos, valores)
         
+    def get_table_path(self, tabla):
+        return self.getPath() + tabla + '.tbl'

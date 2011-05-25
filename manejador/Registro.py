@@ -105,7 +105,7 @@ class Registro(dict):
     def validar_restricciones(self):
         # TODO Revisar cada restricción
         for restriccion in self.tabla.getRestricciones():
-            print restriccion
+            self.log.debug('Evaluar restricción: ' + str(restriccion))
             
             if restriccion[0] == "PRIMARY KEY":
                 # TODO Revisar Primary Key
@@ -127,7 +127,7 @@ class Registro(dict):
                 repetidos = [r for r in self.tabla.getRegistros() if valor_primario == r.get_values_from(restriccion[2])]
                 
                 if len(repetidos) > 0:
-                    ex = ValueNotUniqueForPrimaryKeyException(self.tabla.getNombre(), atributoPrimario, valor_primario)
+                    ex = ValueNotUniqueForPrimaryKeyException(self.tabla.getNombre(), restriccion[2], valor_primario)
                     self.log.error(ex)
                     raise ex
                 

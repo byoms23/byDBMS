@@ -295,10 +295,10 @@ class AttributeDoesNotException(SemanticException):
         return "En la tabla '"+self.t+"' se intentó ingresar valores en el atributo '"+self.g+"', el cual no existe en esta tabla."
 
 # Genera la cadena que representa a la lista enviada
-def formar(lista):
+def formar_texto(lista, separador = ', '):
     r = ''
     for elem in lista:
-        r += str(elem) + ', '
+        r += str(elem) + separador 
     if len(r) >= 2:
         r = r[:-2]
     return r
@@ -324,6 +324,6 @@ class ValueNotUniqueForPrimaryKeyException(SemanticException):
         
     # Genera la cadena que representa a la excepción
     def __str__(self):
-        atributos = formar(self.e)
-        valores = formar(self.v)
+        atributos = formar_texto(self.e)
+        valores = formar_texto(self.v)
         return "Violación de clave primaria, en la tabla '"+self.t+"' se espera(n) que el(los) atributo(s) '"+atributos+"' sea(n) unico(s), el(los) valor(es) '"+valores+"' ya se encuentran en la tabla."
