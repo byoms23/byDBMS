@@ -132,11 +132,28 @@ class Registro(dict):
                     raise ex
                 
             elif restriccion[0] == "FOREIGN KEY":
-                # TODO Revisar Foreign Key
-                pass
+                # TODODONE Revisar Foreign Key
+                
+                # Obtener valores
+                valores = self.get_values_from(restriccion[2])
+                
+                # Buscar tabla en la base de datos
+                tablaForanea = self.tabla.getBaseDeDatos().verificar_tabla(restriccion[3])
+                encontrado = False
+                for registro in tablaForanea.getRegistros():
+                    if valores == registro.get_values_from(restriccion[4]):
+                        encontrado = True
+                        
+                if not encontrado:
+                    ex = ValueNotExistsForForeignKeyException(self.tabla.getNombre(), restriccion[2], tablaForanea.getNombre(), restriccion[4], valores)
+                    self.log.error(ex)
+                    raise ex                    
                 
             elif restriccion[0] == "CHECK":
                 # TODO Revisar Check
-                pass
                 
-
+                
+    # Revisar expresiones
+    def revisar_expresion(self, exp):
+        return False
+        

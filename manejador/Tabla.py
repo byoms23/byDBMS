@@ -476,7 +476,6 @@ class Tabla():
         for linea in lineas:
             valores = parserRegistro.parse(linea)[0]
             r = Registro(self)
-            print valores
             for i in xrange(len(self.atributos)):
                 r[self.atributos[i][0]] = valores[i]
             self.registros.append(r)
