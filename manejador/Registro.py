@@ -108,7 +108,7 @@ class Registro(dict):
             self.log.debug('Evaluar restricción: ' + str(restriccion))
             
             if restriccion[0] == "PRIMARY KEY":
-                # TODO Revisar Primary Key
+                # TODODONE Revisar Primary Key
                 valor_primario = []
                 
                 # Buscar campos de llave primaria

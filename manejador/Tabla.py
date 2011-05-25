@@ -12,6 +12,8 @@ from Resultados import *
 from analizadorSintactico import * 
 from Registro import *
 
+parserRegistro = Parser.buildRegistro()
+
 class Tabla():
     # Contructor
     def __init__(self, nombre, db):
@@ -469,6 +471,15 @@ class Tabla():
     
     # Cargar registros desde el disco duro
     def cargar_registros(self):
+        with open(self.db.get_table_path(self.nombre)) as archivo:
+            lineas = archivo.readlines()
+        for linea in lineas:
+            valores = parserRegistro.parse(linea)[0]
+            r = Registro(self)
+            print valores
+            for i in xrange(len(self.atributos)):
+                r[self.atributos[i][0]] = valores[i]
+            self.registros.append(r)
     
     # Agregar un registro a la tabla seleccionada
     def agregar_registro(self, atributos, valoresList):
@@ -550,11 +561,14 @@ class Tabla():
     def formar_texto(self, registro, separador = '|'):
         r = ''
         for atributo in self.atributos:
-            print atributo
-            if atributo[1] == 'CHAR' or atributo[1] == 'DATE':
-                r += "'" + str(registro[atributo[0]]) + "'"
-            else:
+            if registro[atributo[0]] != None:
+                if atributo[1] == 'CHAR' or atributo[1] == 'DATE':
+                    r += "'"
                 r += str(registro[atributo[0]]) 
+                if atributo[1] == 'CHAR' or atributo[1] == 'DATE':
+                    r += "'"
+            else:
+                r += 'NULL'
             r += separador 
         s = (-1 * len(separador))
         if len(r) >= (-1 * s):

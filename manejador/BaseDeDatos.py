@@ -105,6 +105,8 @@ class BaseDeDatos():
                 dependientes = config[i].split(', ') if config[i].strip() != '' else []
                 tab.setDependientes(dependientes)
                 
+                # Cargar registros de la tabla
+                tab.cargar_registros()
                 # Agregar tabla
                 self.tablas.append(tab)
                 

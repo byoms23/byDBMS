@@ -15,10 +15,25 @@ from AST import *
 def txt(text):
     return ~Token(text)
 
-
 # ----------------------------------------------------------------------
 # Construye el analizador sintactico.
 # ----------------------------------------------------------------------
+
+# Devuelve árbol sintáctico para leer registros
+def buildRegistro(separador = '|'):
+    def get_None(arg):
+        return None
+    def get_str(arg):
+        return [''] if len(arg) == 0 else arg
+    entero = Integer() >> int
+    real = Real() >> float
+    null = Apply('NULL', get_None)
+    fecha = ~Literal("'") & "[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]" & ~Literal("'")
+    texto = Apply(String(quote="'"), get_str)
+    
+    valor = entero | real | fecha | null | texto
+    valores = (valor & (~Literal(separador) & valor)[:] & ~Literal('\n')[:])[:] > List
+    return valores
 
 # Devuelve el analizador sintáctico para expresiones booleanas admitidas
 def buildExp():
@@ -55,7 +70,6 @@ def buildExp():
     exp += (andExp & Token("OR") & exp) | andExp > Exp
     
     return exp
-
 
 # Devuelve el analizar sintactico para SQL.
 def build():
@@ -179,3 +193,5 @@ def build():
 #~ SELECT * FROM BLA WHERE KICK = 2 ORDER BY kick ASC
 #~ """)[0]
 #~ print b.parse("INSERT INTO bla VALUES (1, 2.0, 'BLA', NULL, '2012-12-04'),(1, 2.0, 'BLAesdg', NULL, '2012-12-04')")[0]
+#~ c = buildRegistro()
+#~ print c.parse("0|.1|NULL|'1234-43-22'|'0HOLA'\n")[0]
