@@ -214,18 +214,17 @@ def ejecutar(cadena):
     except lepl.stream.maxdepth.FullFirstMatchException, msg:
         log.debug('Fin análisis léxico y sintáctico.')
         log.error(msg)
-        r = "ERROR: " + str(msg)
+        r = "ERROR SINTÁCTICO: " + str(msg)
     except SemanticException, msg:
         manejador.revision()
         log.debug('Fin análisis semántico.')
         #~ r = "ERROR: " + str(msg)
         r = ''
-    except Exception, msg:
-        log.error("A ocurrido un error inesperado: ")
-        log.error(msg)
-        #~ r = "ERROR: Ha ocurrido un error inesperado, consulte el log para mayor información."
-        r = ''
-        log.debug('Fin análisis semántico.')        
+    #~ except Exception, msg:
+        #~ log.error("A ocurrido un error inesperado: ")
+        #~ log.error(msg)
+        #~ r = ''
+        #~ log.debug('Fin análisis semántico.')        
     
     # Devolver resultado de la ejecución
     return r

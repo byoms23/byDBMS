@@ -16,7 +16,7 @@ import byDBMS
 class Console(cmd.Cmd, object):
 
     # Crear log de la consola.
-    log = logging.getLogger('byDBMS.console')    
+    log = logging.getLogger('byDBMS.console')
     prompt = 'byDBMS> '
     
     def do_ayuda(self, line):

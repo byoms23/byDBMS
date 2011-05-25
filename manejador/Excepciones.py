@@ -227,6 +227,7 @@ class ColumnNotUsedException(SemanticException):
 # ====================================================
 # Excepciones para registros
 # ====================================================
+# Excepción para la cantidad de valores enviados
 class ValuesNotMatchException(SemanticException):
     # Constructor
     def __init__(self, tabla, expected, given):
@@ -237,3 +238,92 @@ class ValuesNotMatchException(SemanticException):
     # Genera la cadena que representa a la excepción
     def __str__(self):
         return "En la tabla '"+self.t+"' se esperan '"+str(self.ex)+"' valores, se recibieron '"+str(self.g)+"'."
+
+# Excepción para tipo de valores enviados
+class ValuesTypeNotMatchException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, position, expected, expectedType, given, givenType):
+        self.t = tabla
+        self.p = position
+        self.e = expected
+        self.et = expectedType
+        self.g = given
+        self.gt = givenType
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        return "En la tabla '"+self.t+"' se espera el tipo '"+str(self.et)+"' para el atributo '"+str(self.e)+"' (valor en la posicion '"+str(self.p)+"'), se recibió el valor '"+str(self.g)+"' de tipo '"+str(self.gt)+"'."
+
+# Excepción para longitud de cadena
+class ValuesLenNotMatchException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, position, expected, expectedType, len_, given):
+        self.t = tabla
+        self.p = position
+        self.e = expected
+        self.et = expectedType
+        self.l = len_
+        self.g = given
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        return "En la tabla '"+self.t+"' se espera el tipo '"+str(self.et)+"' con un máximo de '"+str(self.l)+"' carácteres para el atributo '"+str(self.e)+"' (valor en la posicion '"+str(self.p)+"'), se recibió el valor '"+str(self.g)+"' con '"+str(len(self.g))+"' carácteres."
+
+# Excepción para formato de fecha
+class ValueIsInvalidDateException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, position, expected, expectedType, given):
+        self.t = tabla
+        self.p = position
+        self.e = expected
+        self.et = expectedType
+        self.g = given
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        return "En la tabla '"+self.t+"' se espera el tipo '"+str(self.et)+"' para el atributo '"+str(self.e)+"' (valor en la posicion '"+str(self.p)+"'), se recibió el valor '"+str(self.g)+"' (no es un valor válido para este tipo de dato)."
+
+# Excepción para existencia de un atributo
+class AttributeDoesNotException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, given):
+        self.t = tabla
+        self.g = given
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        return "En la tabla '"+self.t+"' se intentó ingresar valores en el atributo '"+self.g+"', el cual no existe en esta tabla."
+
+# Genera la cadena que representa a la lista enviada
+def formar(lista):
+    r = ''
+    for elem in lista:
+        r += str(elem) + ', '
+    if len(r) >= 2:
+        r = r[:-2]
+    return r
+
+# Excepción por violación de clave primaria (Null)
+class ValueNullInPrimaryKeyException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, expected):
+        self.t = tabla
+        self.e = expected
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        return "Violación de clave primaria, en la tabla '"+self.t+"' el atributo '"+str(self.e)+"' no puede ser nulo, es parte de llave primaria."
+
+# Excepción por violación de clave primaria (Valores repetidos)
+class ValueNotUniqueForPrimaryKeyException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, expected, values):
+        self.t = tabla
+        self.e = expected
+        self.v = values
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        atributos = formar(self.e)
+        valores = formar(self.v)
+        return "Violación de clave primaria, en la tabla '"+self.t+"' se espera(n) que el(los) atributo(s) '"+atributos+"' sea(n) unico(s), el(los) valor(es) '"+valores+"' ya se encuentran en la tabla."

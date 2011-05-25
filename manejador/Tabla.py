@@ -6,7 +6,7 @@
 # Tabla.py
 # Contine el esquema y la información general del manejo de las tablas.
 
-import logging, os, shutil, copy
+import logging, os, shutil, copy, calendar
 from Excepciones import *
 from Resultados import *
 from analizadorSintactico import * 
@@ -83,7 +83,11 @@ class Tabla():
     # Colocar la cantidad de registros que contiene la tabla
     def setCantidadRegistros(self, cant):
         self.cantidadRegistros = cant
-
+    
+    # Obtener los registros de esta tabla
+    def getRegistros(self):
+        return self.registros
+    
     # Obtener la base de datos a la cual pertene
     def getBaseDeDatos(self):
         return self.db
@@ -317,7 +321,7 @@ class Tabla():
         
         # Revisar si es requerido el campo/atributo
         if requerido != None:
-            if not requerido in dic[requerido]:
+            if not requerido in dic:
                 ex = ColumnNotUsedException(requerido, nombre, self)
                 self.log.error(ex)
                 raise ex
@@ -463,24 +467,14 @@ class Tabla():
     # Método de registros
     # ==================================================================
     
-    # Obtener el valor predeterminado del tipo seleccionado
-    def get_default(self, tipo):
-        if tipo == 'INT':
-            return 0
-        elif tipo == 'FLOAT':
-            return 0.0
-        elif tipo == 'CHAR':
-            return ''
-        else:
-            return '1970-01-01'
-    
     # Agregar un registro a la tabla seleccionada
     def agregar_registro(self, atributos, valoresList):
-        # Crear registro nuevo
-        r = Registro()
-        
         # Revisar si específico atributos
         for valores in valoresList:
+            # Crear nuevo registro
+            r = Registro(self)
+            
+            # Verificar si viene la lista o se asume completa
             if not atributos:
                 # Revisar si mando la cantidad de valores esperados
                 if len(self.atributos) != len(valores):
@@ -491,17 +485,57 @@ class Tabla():
                 # Revisar el tipo de cada atributo
                 for i in xrange(len(self.atributos)):
                     nombre, tipo, tam = self.atributos[i]
-                    tipoValor = AST.equivale(type(valores[i]))
+                    valor = valores[i]
+                    tipoValor = AST.equivale(type(valor))
+                    valor = str(valor[0])
                     
-                    if tipoValor == 'DEFAULT':
-                        r[nombre] = self.get_default(tipo)
-                    elif tipoValor == 'NULL':
-                        r[nombre] = None
-                    elif tipoValor == 'CHAR' == tipo:
-                        pass
-                        
-                    print r
-                
+                    val = r.validar_valor(nombre, tipo, tam, i, valor, tipoValor)
+                    
+                    r[nombre] = val
             else:
-                pass
+                # Revisar el tamaño de ambas listas
+                if len(atributos) != len(valores):
+                    ex = ValuesNotMatchException(self.nombre, len(atributos), len(valores))
+                    self.log.error(ex)
+                    raise ex
+                
+                # Instanciar todas los atributos
+                for atributo in self.atributos:
+                    r[atributo[0]] = None
+                
+                # Dar los valores asignados por cada atributo
+                for i in xrange(len(atributos)):
+                    atributo = atributos[i].lower()
+                    valor = valores[i]
+                    
+                    # Buscar el atributo
+                    for i in xrange(len(self.atributos)):
+                        nombre, tipo, tam = self.atributos[i]
+                        if nombre == atributo:
+                            break;
+                    
+                    # Revisar si se encontró el atributo
+                    if atributo != nombre:
+                        ex = AttributeDoesNotException(self.nombre, atributo)
+                        self.log.error(ex)
+                        raise ex
+                    
+                    tipoValor = AST.equivale(type(valor))
+                    valor = str(valor[0])
+                    
+                    val = r.validar_valor(nombre, tipo, tam, i, valor, tipoValor)
+                    
+                    r[nombre] = val
+                
+            # Revisar restricciones para cada registro 
+            r.validar_restricciones()
+            # Agregar registro
+            self.registros.append(r)
+            # TODO Guardar en el disco duro
+            
+            print r
+            print self.registros
+            
+        
+        # TODO Agregar registros a la tabla (memoria y disco duro).
         

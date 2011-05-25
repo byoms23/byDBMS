@@ -119,15 +119,15 @@ def build():
     integer = Token(Integer()) > Int
     real = Token(Real()) > Float
     null = Token("NULL") > Null
-    date = ~simbolo("'") & Token("[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]") & ~simbolo("'") > Fecha
+    date = Token("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") > Fecha
     #~ s = Lookahead("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") & Token("'[^']*'") > Char
-    s = Token("'[^0-9][^']*'") > Char
+    s = Token("'[^']*'") > Char
     default = Token("DEFAULT") > Default
     
     valor = integer | real | null | default | date | s 
     valores = ~simbolo('(') & (valor & (~simbolo(',') & valor)[:]) & ~simbolo(')') > Node
     
-    listaValores = valores & (~simbolo(',') & valores)[:] > Node
+    listaValores = valores & ( ~simbolo(',') & valores )[:] > Node
     rowInsert = txt("INSERT") & txt("INTO ") & identi & listaIdentificadores[:1] & txt("VALUES") & listaValores > RowInsert
     
     # TODO Definición para UPDATE 
@@ -165,7 +165,7 @@ def build():
 #~ print b.parse("UPDATE bla SET kill = 5.1;")[0]
 #~ print b.parse("""
 #~ INSERT INTO bla VALUES (1, 2.0, NULL, '2012-12-13')
-#~ INSERT INTO bla (kill, bla, kick, kiki, kak) VALUES (1, 2.0, 'BLA', NULL, '2012-12-04')
+#~ INSERT INTO bla (kill, bla, kick, kiki, kak) VALUES (1, 2.0, '2012-12-04', 'BLA', NULL, '9')
 #~ UPDATE bla SET kill = 5.1;
 #~ UPDATE bla SET kill = 6.1 WHERE bla = 3;
 #~ UPDATE bla SET kill = 5.1, kick = 3
