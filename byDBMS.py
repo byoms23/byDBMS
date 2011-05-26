@@ -16,7 +16,7 @@ from manejador import *
 from manejador.analizadorSintactico.AST import *
 
 # Carga la configuracion inicial del modulo
-def configure(tipo='warning'):
+def configure(tipo='info'):
     # Variables del modulo
     global path, log, manejador
     
@@ -93,7 +93,7 @@ def configLogger(tipo='', archivo=None):
     fh.setLevel(logging.DEBUG)
     # Determinar el nivel
     tipo = tipo.lower()
-    nivel = LEVELS.get(tipo, logging.WARNING)
+    nivel = LEVELS.get(tipo, logging.INFO)
     # Crear el handler para la consola con el nivel ingresado
     ch = logging.StreamHandler()
     ch.setLevel(nivel)
@@ -189,14 +189,14 @@ def verificacion(ast):
         
     # Verificar cuando se pide actualizar registros
     elif type(ast) == RowUpdate:
-        log.debug('Se detectó una consulta SQL: Insertar registros en una tabla.')
-        atributos = ast[1] if len(ast) > 2 else None
+        log.debug('Se detectó una consulta SQL: Actualizar registros en una tabla.')
+        condicion = ast[2] if len(ast) == 3 else None
         
-        #~ r = manejador.agregar_registro_a_tabla(ast[0].lower(),atributos,ast[-1])
+        r = manejador.actualizar_registros_en_tabla(ast[0].lower(),ast[1],condicion)
 
     # Verificar cuando se pide eliminar registros
     elif type(ast) == RowDelete:
-        log.debug('Se detectó una consulta SQL: Insertar registros en una tabla.')
+        log.debug('Se detectó una consulta SQL: Eliminar registros en una tabla.')
         condicion = ast[1] if len(ast) == 2 else None
         
         r = manejador.eliminar_registros_de_tabla(ast[0].lower(),condicion)

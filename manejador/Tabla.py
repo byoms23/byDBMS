@@ -6,7 +6,7 @@
 # Tabla.py
 # Contine el esquema y la información general del manejo de las tablas.
 
-import logging, os, shutil, copy, calendar
+import logging, os, shutil, copy, datetime
 from Excepciones import *
 from Resultados import *
 from analizadorSintactico import * 
@@ -473,6 +473,7 @@ class Tabla():
     
     # Cargar registros desde el disco duro
     def cargar_registros(self):
+        self.log.debug("Cargando registros.")
         with open(self.db.get_table_path(self.nombre)) as archivo:
             lineas = archivo.readlines()
         for linea in lineas:
@@ -481,6 +482,7 @@ class Tabla():
             for i in xrange(len(self.atributos)):
                 r[self.atributos[i][0]] = valores[i]
             self.registros.append(r)
+        self.log.debug("Registros cargados.")
     
     # Agregar un registro a la tabla seleccionada
     def agregar_registro(self, atributos, valoresList):
@@ -527,8 +529,8 @@ class Tabla():
                     valor = valores[i]
                     
                     # Buscar el atributo
-                    for i in xrange(len(self.atributos)):
-                        nombre, tipo, tam = self.atributos[i]
+                    for j in xrange(len(self.atributos)):
+                        nombre, tipo, tam = self.atributos[j]
                         if nombre == atributo:
                             break;
                     
@@ -573,11 +575,77 @@ class Tabla():
             else:
                 r += 'NULL'
             r += separador 
-        s = (-1 * len(separador))
+        s = len(separador)
         if len(r) >= (-1 * s):
-            r = r[:s] + '\n'
+            r = r[:(s * -1)] + '\n'
         return r
         
+    # Actualizar registros de la tabla seleccionada
+    def actualizar_registros(self, cambios, condicion):
+        # Verificar que la condición esté bien formada
+        if condicion != None:
+            self.evaluarExpresion(condicion)
+        
+        # Para cada registro
+        validado = False
+        actualizados=0
+        pos = -1
+        for registro in self.registros:
+            pos += 1
+            # Evaluar si hay que modificar este registro
+            if condicion == None or registro.evaluarExpresion(condicion):
+                
+                # Crear replica
+                nuevo = copy.copy(registro)
+                
+                # Realizar cambios
+                for i in xrange(len(cambios)):
+                    cambio = cambios[i]
+                    atributo = cambios[i][0].lower()
+                    
+                    # Validad cambios (1 vez)
+                    if validado != True:
+                        # Buscar el atributo
+                        for j in xrange(len(self.atributos)):
+                            nombre, tipo, tam = self.atributos[j]
+                            if nombre == atributo:
+                                break;
+                        
+                        # Revisar si se encontró el atributo
+                        if atributo != nombre:
+                            ex = AttributeDoesNotException(self.nombre, atributo)
+                            self.log.error(ex)
+                            raise ex
+                        
+                    # Validar valores
+                    tipoValor = AST.equivale(type(cambio[1]))
+                    valor = str(cambio[1][0])
+                    val = nuevo.validar_valor(nombre, tipo, tam, i, valor, tipoValor)
+                        
+                    # Guardar cambios
+                    nuevo[atributo] = val
+                    
+                # Revisar restricciones para cada registro 
+                nuevo.validar_restricciones(registro)
+                validado = True
+                
+                # Revisar integridad de llaves foraneas externas
+                nuevo.es_modificable(registro)
+                
+                # Hacer modificacion
+                self.registros.pop(pos)
+                self.registros.insert(pos, nuevo)
+                actualizados += 1
+                
+        # Guardar en disco
+        lineas = map(lambda r: self.formar_texto(r), self.registros)
+
+        with open(self.db.get_table_path(self.nombre), 'w') as archivo:
+            archivo.writelines(lineas)
+        
+        # Mostrar el log de los registros eliminados
+        self.log.info("Se ha actualizado '%.i' registros." % actualizados)
+
     # Eliminar datos de la tabla seleccionada
     def eliminar_registros(self, condicion):
         # Verificar que la condición esté bien formada
@@ -588,26 +656,23 @@ class Tabla():
         eliminar = []
         for registro in self.registros:
             # Revisar si el registro cumple la condición (si hay condicion)
-            if condicion != None:
-                if registro.evaluarExpresion(condicion):
+            if condicion == None or registro.evaluarExpresion(condicion):
                     # Revisar alguien depende del registro
                     if registro.es_eliminable():
                         # Marcar para eliminar
                         eliminar.append(registro)
-            else:
-                # Revisar alguien depende del registro
-                if registro.es_eliminable():
-                    # Marcar para eliminar
-                    eliminar.append(registro)
             
         # Guardar registros (fisicamente)
         with open(self.db.get_table_path(self.nombre), 'w') as archivo:
-            for r in self.registros:
+            pos = 0
+            while pos < len(self.registros):
+                r = self.registros[pos]
                 if not r in eliminar:
                     linea = self.formar_texto(r)
                     archivo.write(linea)
+                    pos += 1
                 else:
-                    self.registros.remove(r)
+                    self.registros.pop(pos)
         
         # Mostrar el log de los registros eliminados
         self.log.info("Se ha eliminado '%.i' registros." % len(eliminar))

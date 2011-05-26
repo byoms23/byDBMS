@@ -73,6 +73,46 @@ def buildExp():
     
     return exp
 
+# Devuelve el analizador sintáctico para expresiones booleanas admitidas
+def buildCondicion():
+    # Definir tokens    
+    identi = Token('[a-zA-Z][0-9a-zA-Z]*') > Identificador
+    identiCompleto = Token('[a-zA-Z][0-9a-zA-Z]*.') > IdentificadorCompleto
+    integer = Token(Integer()) > Int
+    fecha = fecha = Token("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") > Fecha
+    real = Token(Real()) > Float
+    null = Token("NULL") > Null
+    s = Token("'[A-Za-z0-9]*'") > Char
+    
+    # Definicion de expresiones aceptadas
+    value = ( identi
+            | identiCompleto
+            | integer
+            | real
+            | null 
+            | fecha
+            | s )
+    
+    predExp = ( (value & Token("=")  & value) 
+              | (value & Token("<>") & value) 
+              | (value & Token("!=") & value) 
+              | (value & Token(">")  & value) 
+              | (value & Token(">=") & value) 
+              | (value & Token("<")  & value) 
+              | (value & Token("<=") & value) 
+              | value 
+              ) > PredExp
+
+    notExp = (Token("NOT") & predExp) | predExp > NotExp
+
+    andExp = Delayed()
+    andExp += (notExp & Token("AND") & andExp) | notExp > AndExp
+
+    exp = Delayed()
+    exp += (andExp & Token("OR") & exp) | andExp > Exp
+    
+    return exp
+
 # Devuelve el analizar sintactico para SQL.
 def build():
     # Definir tokens    
@@ -136,7 +176,6 @@ def build():
     real = Token(Real()) > Float
     null = Token("NULL") > Null
     date = Token("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") > Fecha
-    #~ s = Lookahead("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") & Token("'[^']*'") > Char
     s = Token("'[^']*'") > Char
     default = Token("DEFAULT") > Default
     
@@ -155,7 +194,10 @@ def build():
     rowDelete = txt("DELETE") & txt("FROM") & identi & (txt('WHERE') & exp)[:1] > RowDelete
     
     # TODO Definicion para SELECT 
-    rowSelect = txt("SELECT") & simbolo("*") & txt("FROM") & identi & (Token("WHERE") & exp)[:1] & (Token('ORDER') & txt('BY') & exp & (Token("ASC") | Token("DESC"))[:1] )[:1] > RowSelect
+    identificadores = (identi & ([~simbolo(',') & identi])[:]
+    columnas = simbolo("*") | identificadores)
+    condicion = buildCondicion()
+    rowSelect = txt("SELECT") & columnas & txt("FROM") & identificadores & (Token("WHERE") & exp)[:1] & (Token('ORDER') & txt('BY') & exp & (Token("ASC") | Token("DESC"))[:1] )[:1] > RowSelect
     
     # Definir SQL
     consultaSql = Star( (dataBaseCreate 

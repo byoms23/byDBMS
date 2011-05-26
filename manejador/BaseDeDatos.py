@@ -573,6 +573,14 @@ class BaseDeDatos():
     def get_table_path(self, tabla):
         return self.getPath() + tabla + '.tbl'
         
+    # Actualizar registros de la tabla seleccionada
+    def actualizar_registros_en_tabla(self, tabla, cambios, condicion):
+        # Guardar en log
+        self.log.debug("Actualizar registros en la tabla '"+tabla+"'.")
+        
+        # Verificar que la tabla exista
+        return self.verificar_tabla(tabla).actualizar_registros(cambios, condicion)
+        
     # Eliminar registros de la tabla seleccionada
     def eliminar_registros_de_tabla(self, tabla, condicion):
         # Guardar en log

@@ -292,7 +292,7 @@ class AttributeDoesNotException(SemanticException):
         
     # Genera la cadena que representa a la excepción
     def __str__(self):
-        return "En la tabla '"+self.t+"' se intentó ingresar valores en el atributo '"+self.g+"', el cual no existe en esta tabla."
+        return "En la tabla '"+self.t+"' se intentó asignar valores en el atributo '"+self.g+"', el cual no existe en esta tabla."
 
 # Genera la cadena que representa a la lista enviada
 def formar_texto(lista, separador = ', '):
@@ -378,17 +378,18 @@ class ValueNotTheCheckException(SemanticException):
 # Excepción por violación de clave primaria foranea (valores no existentes)
 class ValueIsReferencedException(SemanticException):
     # Constructor
-    def __init__(self, tabla, atributos, tablaForanea, atributosForaneos, restriccion, values):
+    def __init__(self, tabla, atributos, tablaForanea, atributosForaneos, restriccion, values, accion):
         self.t = tabla
         self.a = atributos
         self.tf = tablaForanea
         self.af = atributosForaneos
         self.r = restriccion
         self.v = values
+        self.ac = accion
         
     # Genera la cadena que representa a la excepción
     def __str__(self):
-        atributos = formar_texto(self.e)
+        atributos = formar_texto(self.a)
         aForaneos = formar_texto(self.af)
         valores = formar_texto(self.v)
-        return "Violación de la llave foranea '"+self.r+"', para eliminar el(los) valor(es) '"+valores+"' que pertenezce(n) al(a los) atributo(s) '"+atributos+"' en la tabla '"+self.t+"', no debe(n) existir en el(los) atributo(s) '"+aForaneos+"' de la tabla '"+self.tf+"'."
+        return "Violación de la llave foranea '"+self.r+"', para "+self.ac+" el(los) valor(es) '"+valores+"' que pertenezce(n) al(a los) atributo(s) '"+atributos+"' en la tabla '"+self.t+"', no debe(n) existir en el(los) atributo(s) '"+aForaneos+"' de la tabla '"+self.tf+"'."

@@ -84,6 +84,9 @@ class Valor(Node) :
 # Representa un identificador
 class Identificador(Valor): pass
 
+# Representa un identificador
+class IdentificadorCompleto(Valor): pass
+
 # Representa un INT
 class Int(Valor): pass
 

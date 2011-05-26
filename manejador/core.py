@@ -316,7 +316,7 @@ class ManejadorBaseDatos():
     # Método de registros
     # ==================================================================
     
-    # Agregar un registro a la tabla
+    # Agregar registros a la tabla
     def agregar_registro_a_tabla(self, tabla, atributos, valores):
         # Vericar base de datos actual
         self.verificar_base_de_datos_en_uso()
@@ -324,6 +324,15 @@ class ManejadorBaseDatos():
         # Ingresar registros en la tabla descrita
         return self.base_de_datos_actual.agregar_registro_a_tabla(tabla, atributos, valores)
         
+    # Actualizar registros en la tabla
+    def actualizar_registros_en_tabla(self, tabla, cambios, condicion):
+        # Vericar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Ingresar registros en la tabla descrita
+        return self.base_de_datos_actual.actualizar_registros_en_tabla(tabla, cambios, condicion)
+        
+    
     # Eliminar registros de una tabla
     def eliminar_registros_de_tabla(self, tabla, condicion):
         # Verificar base de datos actual

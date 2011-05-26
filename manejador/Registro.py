@@ -102,7 +102,7 @@ class Registro(dict):
         return r
         
     # Validar restricciones
-    def validar_restricciones(self):
+    def validar_restricciones(self, omitir=None):
         # TODO Revisar cada restricción
         for restriccion in self.tabla.getRestricciones():
             self.log.debug('Evaluar restricción: ' + str(restriccion))
@@ -124,8 +124,9 @@ class Registro(dict):
                     valor_primario.append(valor) 
                     
                 # Revisar que el valor sea único en la tabla
-                repetidos = [r for r in self.tabla.getRegistros() if valor_primario == r.get_values_from(restriccion[2])]
+                repetidos = [r for r in self.tabla.getRegistros() if valor_primario == r.get_values_from(restriccion[2]) and r != omitir]
                 
+                # Revisión de que sea único
                 if len(repetidos) > 0:
                     ex = ValueNotUniqueForPrimaryKeyException(self.tabla.getNombre(), restriccion[2], valor_primario)
                     self.log.error(ex)
@@ -236,6 +237,31 @@ class Registro(dict):
             # Devolver valor
             return str(exp[0])
     
+    # Verifica si este registro se puede modificar sin perder integridad referencial.
+    def es_modificable(self, antiguo):
+        db = self.tabla.getBaseDeDatos()
+        for tbl in self.tabla.getDependientes():
+            tabla = db.verificar_tabla(tbl)
+            
+            # Buscar restricciones
+            listaClaves = []
+            for restriccion in tabla.getRestricciones():
+                if restriccion[0] == "FOREIGN KEY" and restriccion[3] == self.tabla.getNombre():
+                    self.log.debug('Evaluar para la restricción: ' + str(restriccion))
+                    listaClaves.append(restriccion)
+            
+            # Verificar cada registro
+            for registro in tabla.getRegistros():
+                # Verificar cada restricción
+                for rest in listaClaves:
+                    valores = antiguo.get_values_from(rest[4])
+                    if registro.get_values_from(rest[2]) == valores != self.get_values_from(rest[4]):
+                        # Mostrar error
+                        ex = ValueIsReferencedException(self.tabla.getNombre(), restriccion[4], tbl, restriccion[4], restriccion[1], valores, "modificar")
+                        self.log.error(ex)
+                        raise ex
+        return True
+    
     # Verifica si este registro se puede eliminar sin perder consistencia.
     def es_eliminable(self):
         db = self.tabla.getBaseDeDatos()
@@ -244,7 +270,7 @@ class Registro(dict):
             
             listaClaves = []
             for restriccion in tabla.getRestricciones():
-                if restriccion[0] == "FOREIGN KEY" and restriccion[3] == tbl:
+                if restriccion[0] == "FOREIGN KEY" and restriccion[3] == self.tabla.getNombre():
                     self.log.debug('Evaluar para la restricción: ' + str(restriccion))
                     listaClaves.append(restriccion)
             
@@ -252,12 +278,11 @@ class Registro(dict):
             for registro in tabla.getRegistros():
                 # Verfica cada restriccion
                 for rest in listaClaves:
-                    
-                    if self.get_values_from(rest[4]) == registro.get_values_from(rest[2]):
+                    valores = self.get_values_from(rest[4])
+                    if valores == registro.get_values_from(rest[2]):
                         # Mostrar error
-                        ex = ValueIsReferencedException(self.tabla.getNombre(), restriccion[4], tbl, restriccion[4], valores)
+                        ex = ValueIsReferencedException(self.tabla.getNombre(), restriccion[4], tbl, restriccion[4], restriccion[1], valores, "eliminar")
                         self.log.error(ex)
                         raise ex                    
-                                        
                     
         return True
