@@ -197,9 +197,9 @@ def verificacion(ast):
     # Verificar cuando se pide eliminar registros
     elif type(ast) == RowDelete:
         log.debug('Se detectó una consulta SQL: Insertar registros en una tabla.')
-        atributos = ast[1] if len(ast) > 2 else None
+        condicion = ast[1] if len(ast) == 2 else None
         
-        r = manejador.agregar_registro_a_tabla(ast[0].lower(),atributos,ast[-1])
+        r = manejador.eliminar_registros_de_tabla(ast[0].lower(),condicion)
     # Devolver el resultado
     return r
 

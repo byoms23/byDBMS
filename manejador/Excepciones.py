@@ -374,3 +374,21 @@ class ValueNotTheCheckException(SemanticException):
         atributos = formar_texto(self.e)
         valores = formar_texto(self.v)
         return "Violación de restricción, para que el(los) valor(es) '"+valores+"' pertenezca(n) al(a los) atributo(s) '"+atributos+"' en la tabla '"+self.t+"', debe cumplir la restricción '"+self.r+"' ("+self.ex+")."
+
+# Excepción por violación de clave primaria foranea (valores no existentes)
+class ValueIsReferencedException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, atributos, tablaForanea, atributosForaneos, restriccion, values):
+        self.t = tabla
+        self.a = atributos
+        self.tf = tablaForanea
+        self.af = atributosForaneos
+        self.r = restriccion
+        self.v = values
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        atributos = formar_texto(self.e)
+        aForaneos = formar_texto(self.af)
+        valores = formar_texto(self.v)
+        return "Violación de la llave foranea '"+self.r+"', para eliminar el(los) valor(es) '"+valores+"' que pertenezce(n) al(a los) atributo(s) '"+atributos+"' en la tabla '"+self.t+"', no debe(n) existir en el(los) atributo(s) '"+aForaneos+"' de la tabla '"+self.tf+"'."

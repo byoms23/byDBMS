@@ -567,10 +567,17 @@ class BaseDeDatos():
         self.log.debug("Insertar registros en la tabla '"+tabla+"'.")
         
         # Verificar que la tabla exista
-        self.verificar_tabla(tabla)    
-        
-        # Regresar respuesta
-        return self.tablas[self.tablas.index(tabla)].agregar_registro(atributos, valores)
-        
+        return self.verificar_tabla(tabla).agregar_registro(atributos, valores)
+      
+    # Obtener la ruta al archivo que contiene la tabla descrita.
     def get_table_path(self, tabla):
         return self.getPath() + tabla + '.tbl'
+        
+    # Eliminar registros de la tabla seleccionada
+    def eliminar_registros_de_tabla(self, tabla, condicion):
+        # Guardar en log
+        self.log.debug("Eliminar registros en la tabla '"+tabla+"'.")
+        
+        # Verificar que la tabla exista
+        return self.verificar_tabla(tabla).eliminar_registros(condicion)
+      

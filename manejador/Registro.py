@@ -217,7 +217,6 @@ class Registro(dict):
                 
         elif t == AST.Identificador:
             # Devolver valor
-            print self[exp[0].lower()]
             return self[exp[0].lower()]
         elif t == AST.Int:
             # Devolver valor
@@ -236,8 +235,29 @@ class Registro(dict):
         elif t == AST.Char:
             # Devolver valor
             return str(exp[0])
-        else:
-            # Devolver tipo y diccionario vacio
-            print exp
-            print t
-            return (AST.equivale(t), [])
+    
+    # Verifica si este registro se puede eliminar sin perder consistencia.
+    def es_eliminable(self):
+        db = self.tabla.getBaseDeDatos()
+        for tbl in self.tabla.getDependientes():
+            tabla = db.verificar_tabla(tbl)
+            
+            listaClaves = []
+            for restriccion in tabla.getRestricciones():
+                if restriccion[0] == "FOREIGN KEY" and restriccion[3] == tbl:
+                    self.log.debug('Evaluar para la restricción: ' + str(restriccion))
+                    listaClaves.append(restriccion)
+            
+            # Verificar cada registro
+            for registro in tabla.getRegistros():
+                # Verfica cada restriccion
+                for rest in listaClaves:
+                    
+                    if self.get_values_from(rest[4]) == registro.get_values_from(rest[2]):
+                        # Mostrar error
+                        ex = ValueIsReferencedException(self.tabla.getNombre(), restriccion[4], tbl, restriccion[4], valores)
+                        self.log.error(ex)
+                        raise ex                    
+                                        
+                    
+        return True

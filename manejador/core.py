@@ -321,6 +321,13 @@ class ManejadorBaseDatos():
         # Vericar base de datos actual
         self.verificar_base_de_datos_en_uso()
         
-        # Renombrar tabla de la base de datos actual
+        # Ingresar registros en la tabla descrita
         return self.base_de_datos_actual.agregar_registro_a_tabla(tabla, atributos, valores)
         
+    # Eliminar registros de una tabla
+    def eliminar_registros_de_tabla(self, tabla, condicion):
+        # Verificar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Eliminar regirso en la tabla descrita
+        return self.base_de_datos_actual.eliminar_registros_de_tabla(tabla, condicion)

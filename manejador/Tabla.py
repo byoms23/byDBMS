@@ -484,6 +484,9 @@ class Tabla():
     
     # Agregar un registro a la tabla seleccionada
     def agregar_registro(self, atributos, valoresList):
+        # Definir variables
+        insertados = len(self.registros)
+        
         # Revisar si específico atributos
         for valores in valoresList:
             # Crear nuevo registro
@@ -544,19 +547,18 @@ class Tabla():
                 
             # Revisar restricciones para cada registro 
             r.validar_restricciones()
+            
             # Agregar registro a la tabla (memoria)
             self.registros.append(r)
-            # TODO # Agregar registro a la tabla (disco duro)
             
+            # TODODONE Agregar registro a la tabla (disco duro)            
             linea = self.formar_texto(r)
             with open(self.db.get_table_path(self.nombre), 'a') as archivo:
                 archivo.write(linea)
-            
-            print r
-            print self.registros
-            
         
-        # TODO Agregar registros a la tabla (memoria y disco duro).
+        # Mostrar el log de los registros eliminados
+        insertados = len(self.registros) - insertados
+        self.log.info("Se ha insertado '%.i' registros." % insertados)
         
     # Dar formato a un registro
     def formar_texto(self, registro, separador = '|'):
@@ -575,3 +577,37 @@ class Tabla():
         if len(r) >= (-1 * s):
             r = r[:s] + '\n'
         return r
+        
+    # Eliminar datos de la tabla seleccionada
+    def eliminar_registros(self, condicion):
+        # Verificar que la condición esté bien formada
+        if condicion != None:
+            self.evaluarExpresion(condicion)
+        
+        # Buscar registros que cumplen con la condición
+        eliminar = []
+        for registro in self.registros:
+            # Revisar si el registro cumple la condición (si hay condicion)
+            if condicion != None:
+                if registro.evaluarExpresion(condicion):
+                    # Revisar alguien depende del registro
+                    if registro.es_eliminable():
+                        # Marcar para eliminar
+                        eliminar.append(registro)
+            else:
+                # Revisar alguien depende del registro
+                if registro.es_eliminable():
+                    # Marcar para eliminar
+                    eliminar.append(registro)
+            
+        # Guardar registros (fisicamente)
+        with open(self.db.get_table_path(self.nombre), 'w') as archivo:
+            for r in self.registros:
+                if not r in eliminar:
+                    linea = self.formar_texto(r)
+                    archivo.write(linea)
+                else:
+                    self.registros.remove(r)
+        
+        # Mostrar el log de los registros eliminados
+        self.log.info("Se ha eliminado '%.i' registros." % len(eliminar))
