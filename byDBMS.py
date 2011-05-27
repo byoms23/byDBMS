@@ -200,6 +200,14 @@ def verificacion(ast):
         condicion = ast[1] if len(ast) == 2 else None
         
         r = manejador.eliminar_registros_de_tabla(ast[0].lower(),condicion)
+        
+    # Verificar cuando se hace una selección de registros
+    elif type(ast) == RowSelect:
+        log.debug('Se detectó una consulta SQL: Seleccionar registros.')
+        
+        
+        #r = manejador.eliminar_registros_de_tabla(ast[0].lower(),condicion)
+        
     # Devolver el resultado
     return r
 
@@ -226,7 +234,7 @@ def ejecutar(cadena):
         log.debug('Fin análisis semántico.')
     except lepl.stream.maxdepth.FullFirstMatchException, msg:
         log.debug('Fin análisis léxico y sintáctico.')
-        log.error(msg)
+        #log.error(msg)
         r = "ERROR SINTÁCTICO: " + str(msg)
     except SemanticException, msg:
         manejador.revision()
@@ -259,7 +267,7 @@ def ejecutarDesdeArchivo(archivo):
             texto += l
         r = ejecutar(texto)
     except IOError, msg:
-        r = "El archivo '"+archivo+"' no existe o no es un archivo valido."
+        r = "ERROR: El archivo '"+archivo+"' no existe o no es un archivo valido."
     
     # Devolver resultado de la operación
     return r

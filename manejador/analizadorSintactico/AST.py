@@ -148,6 +148,15 @@ class Exp(Node):
         elif len(self) == 3:
             return self[0].toString() + " " + str(self[1]) + " " + self[2].toString()
 
+# Una expresión
+class OrExp(Node):
+    # Convertir a texto (no sobreescribir arbol)
+    def toString(self):
+        if len(self) == 1:
+            return self[0].toString()
+        elif len(self) == 3:
+            return self[0].toString() + " " + str(self[1]) + " " + self[2].toString()
+
 def equivale(obj):
     # Declavar objetos
     dic = {

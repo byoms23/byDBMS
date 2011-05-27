@@ -39,6 +39,7 @@ def buildRegistro(separador = '|'):
 def buildExp():
     # Definir tokens    
     identi = Token('[a-zA-Z][0-9a-zA-Z]*') > Identificador
+    #identiCompleto = Token('[a-zA-Z][0-9a-zA-Z]*\s*\.\s*[a-zA-Z][0-9a-zA-Z]*') > IdentificadorCompleto
     integer = Token(Integer()) > Int
     fecha = fecha = Token("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") > Fecha
     real = Token(Real()) > Float
@@ -46,52 +47,15 @@ def buildExp():
     s = Token("'[A-Za-z0-9]*'") > Char
     
     # Definicion de expresiones aceptadas
-    value = ( identi
+    value = ( #identiCompleto |
+              identi
+             
             | integer
             | real
             | null 
             | fecha
-            | s )
-    
-    predExp = ( (value & Token("=")  & value) 
-              | (value & Token("<>") & value) 
-              | (value & Token("!=") & value) 
-              | (value & Token(">")  & value) 
-              | (value & Token(">=") & value) 
-              | (value & Token("<")  & value) 
-              | (value & Token("<=") & value) 
-              | value 
-              ) > PredExp
-
-    notExp = (Token("NOT") & predExp) | predExp > NotExp
-
-    andExp = Delayed()
-    andExp += (notExp & Token("AND") & andExp) | notExp > AndExp
-
-    exp = Delayed()
-    exp += (andExp & Token("OR") & exp) | andExp > Exp
-    
-    return exp
-
-# Devuelve el analizador sintáctico para expresiones booleanas admitidas
-def buildCondicion():
-    # Definir tokens    
-    identi = Token('[a-zA-Z][0-9a-zA-Z]*') > Identificador
-    identiCompleto = Token('[a-zA-Z][0-9a-zA-Z]*.') > IdentificadorCompleto
-    integer = Token(Integer()) > Int
-    fecha = fecha = Token("'[0-9][0-9][0-9][0-9]\-[0-9][0-9]\-[0-9][0-9]'") > Fecha
-    real = Token(Real()) > Float
-    null = Token("NULL") > Null
-    s = Token("'[A-Za-z0-9]*'") > Char
-    
-    # Definicion de expresiones aceptadas
-    value = ( identi
-            | identiCompleto
-            | integer
-            | real
-            | null 
-            | fecha
-            | s )
+            | s 
+            )
     
     predExp = ( (value & Token("=")  & value) 
               | (value & Token("<>") & value) 
@@ -194,10 +158,20 @@ def build():
     rowDelete = txt("DELETE") & txt("FROM") & identi & (txt('WHERE') & exp)[:1] > RowDelete
     
     # TODO Definicion para SELECT 
-    identificadores = (identi & ([~simbolo(',') & identi])[:]
-    columnas = simbolo("*") | identificadores)
-    condicion = buildCondicion()
-    rowSelect = txt("SELECT") & columnas & txt("FROM") & identificadores & (Token("WHERE") & exp)[:1] & (Token('ORDER') & txt('BY') & exp & (Token("ASC") | Token("DESC"))[:1] )[:1] > RowSelect
+    identificadores = identi & (~simbolo(',') & identi)[:]
+    columnas = simbolo("*") | identificadores > Node
+    condicion = exp
+    ordenador = exp & (Token("ASC") | Token("DESC"))[:1] > Node
+    listaOrdenador = ordenador & (~simbolo(',') & ordenador)[:] > Node
+    where = Token('WHERE') & exp
+    order = (Token('ORDER') & txt('BY') & listaOrdenador)[:1]
+    rowSelect = txt("SELECT") & columnas & txt("FROM") & identificadores & where & order > RowSelect
+    
+    #~ print where.parse(' WHERE  c.s = 1')[0]
+    #~ print where.parse("")[0]
+    #~ print order.parse('   ')[0]
+    #~ print order.parse('ORDER BY Null')[0]
+    #~ print rowSelect.parse("SELECT * FROM TABLA0 ")[0]
     
     # Definir SQL
     consultaSql = Star( (dataBaseCreate 
