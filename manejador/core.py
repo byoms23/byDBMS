@@ -340,3 +340,11 @@ class ManejadorBaseDatos():
         
         # Eliminar regirso en la tabla descrita
         return self.base_de_datos_actual.eliminar_registros_de_tabla(tabla, condicion)
+
+    # Eliminar registros de una tabla
+    def seleccionar_registros(self, columnas, tablas, condicion, ordenador):
+        # Verificar base de datos actual
+        self.verificar_base_de_datos_en_uso()
+        
+        # Eliminar regirso en la tabla descrita
+        return self.base_de_datos_actual.seleccionar_registros(columnas, tablas, condicion, ordenador)

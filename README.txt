@@ -58,3 +58,11 @@ Archivo de configuración
 Para el correcto funcionamiento del gestor se utiliza un archivo de configuración (byDBMS.conf), contiene la información necesaria para la configuración inicial del gestor. El archivo de configuración debe contener las siguientes variables:
  * path     Contiene el path donde se encuentra el punto inicial de las bases de datos, la carpeta donde se encuentra el archivo maestro de metadata de las bases de datos y las mismas bases de datos que utilizará el gestor.
  * logFile  Indica el path al archivo en el cual se desea que se guarde el log generado por el gestor.
+
+-------------------
+Extras
+-------------------
+
+Para la segunda fase se implementaró de forma adiconal a lo solicitado.
+ * Historial de instrucciones ejecutadas (se puede navegar mediante las flechas de arriba y abajo).
+ * Completación de las instrucciones internas de byDBMS (al precionar 'tab' aparece el listado de las instrucciones disponibles y si hay una única opción la autocompleta).

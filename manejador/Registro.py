@@ -40,7 +40,17 @@ class Registro(dict):
                 ret = self.get_default(tipo)
             elif tipoValor == 'NULL':
                 ret = None
-            elif (tipoValor == 'CHAR' == tipo) or (tipoValor == 'DATE' and tipo == 'CHAR'):
+            elif (tipoValor == 'CHAR' == tipo):
+                # Revisar el tamaño
+                tam=int(tam)
+                if len(valor) > tam:
+                    # Arroja error de tipos
+                    ex = ValuesLenNotMatchException(self.tabla.getNombre(), pos, nombre, tipo, tam, valor)
+                    self.log.error(ex)
+                    raise ex
+                
+                ret = valor
+            elif (tipoValor == 'DATE' and tipo == 'CHAR'):
                 # Revisar el tamaño
                 valor=valor[1:-1]
                 tam=int(tam)
@@ -219,6 +229,9 @@ class Registro(dict):
         elif t == AST.Identificador:
             # Devolver valor
             return self[exp[0].lower()]
+        elif t == AST.Identificador:
+            # Devolver valor
+            return evaluarExpresion(Identificador(exp[1].toString().lower()))
         elif t == AST.Int:
             # Devolver valor
             return int(exp[0])
@@ -286,3 +299,89 @@ class Registro(dict):
                         raise ex                    
                     
         return True
+
+    # Revisar expresiones (valor)
+    def evaluar_condicion(self, exp):
+        t = type(exp)
+        # Evaluar OR
+        if t == AST.Exp: #, AST.AndExp, AST.NotExp]:
+            # Evaluar las expresiones
+            if(len(exp) == 1):
+                return self.evaluar_condicion(exp[0])
+            else:
+                return self.evaluar_condicion(exp[0]) or self.evaluar_condicion(exp[2])
+        # Evaluar AND
+        elif t == AST.AndExp:
+            # Evaluar las expresiones
+            if(len(exp) == 1):
+                return self.evaluar_condicion(exp[0])
+            else:
+                return self.evaluar_condicion(exp[0]) and self.evaluar_condicion(exp[2])            
+        # Evaluar NOT
+        elif t == AST.NotExp:
+            # Evaluar las expresiones
+            if(len(exp) == 1):
+                return self.evaluar_condicion(exp[0])
+            else:
+                return not self.evaluar_condicion(exp[1])
+        # Evaluar operandos
+        elif type(exp) == AST.PredExp:
+            if (len(exp) == 1):
+                # Verificar que el tipo no sea nulo
+                return self.evaluar_condicion(exp[0])
+            elif(len(exp) == 3):
+                op = exp[1]
+                v1 = self.evaluar_condicion(exp[0])
+                v2 = self.evaluar_condicion(exp[2])
+                r = False
+                
+                # Revisar el tipo de los datos 
+                if type(v1) == str and type(v2) == datetime.date:
+                    v2 = str(v2)
+                elif type(v2) == str and type(v1) == datetime.date:
+                    v1 = str(v1)
+                
+                # Revisar segun operadores validos
+                if op == '=':
+                    r = v1 == v2
+                elif op == '!=' or op == '<>':
+                    r = v1 != v2
+                elif op == '>':
+                    r = v1 > v2
+                elif op == '>=':
+                    r = v1 >= v2
+                elif op == '<':
+                    r = v1 < v2
+                elif op == '<=':
+                    r = v1 <= v2
+                
+                # Devolver tipo e identificadores
+                return r
+                
+        elif t == AST.Identificador:
+            # Devolver valor
+            atributo = exp[0].lower()
+            for at in self.tabla.getAtributos():
+                if at[0].endswith(atributo):
+                    return self[at[0]]
+        elif t == AST.IdentificadorCompleto:
+            # Devolver valor
+            atributo = exp[0].lower() + '.' +exp[1].lower()
+            return self[atributo]
+        elif t == AST.Int:
+            # Devolver valor
+            return int(exp[0])
+        elif t == AST.Fecha:
+            # Devolver valor
+            fecha = exp[0].split('-')
+            fecha = map(lambda x: int(x), fecha)
+            return datetime.date(fecha[0], fecha[1], fecha[2])
+        elif t == AST.Float:
+            # Devolver valor
+            return float(exp[0])
+        elif t == AST.Null:
+            # Devolver valor
+            return None
+        elif t == AST.Char:
+            # Devolver valor
+            return str(exp[0])

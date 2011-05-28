@@ -292,7 +292,21 @@ class AttributeDoesNotException(SemanticException):
         
     # Genera la cadena que representa a la excepción
     def __str__(self):
-        return "En la tabla '"+self.t+"' se intentó asignar valores en el atributo '"+self.g+"', el cual no existe en esta tabla."
+        return "En la tabla '"+self.t+"' se intentó utilizar el atributo '"+self.g+"', el cual no existe en esta tabla."
+
+# Excepción para existencia de un atributo
+class AttributeIsAmbiguousException(SemanticException):
+    # Constructor
+    def __init__(self, tablas, atributo, atributos):
+        self.ts = tablas
+        self.a = atributo
+        self.ats = atributos
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        tablas = formar_texto(self.ts)
+        atributos = formar_texto(self.ats)
+        return "Existe ambigüedad con el nombre '"+self.a+"' en la consulta a las tablas '"+tablas+"', puede referirse a los atributos '"+atributos+"'."
 
 # Genera la cadena que representa a la lista enviada
 def formar_texto(lista, separador = ', '):
@@ -393,3 +407,15 @@ class ValueIsReferencedException(SemanticException):
         aForaneos = formar_texto(self.af)
         valores = formar_texto(self.v)
         return "Violación de la llave foranea '"+self.r+"', para "+self.ac+" el(los) valor(es) '"+valores+"' que pertenezce(n) al(a los) atributo(s) '"+atributos+"' en la tabla '"+self.t+"', no debe(n) existir en el(los) atributo(s) '"+aForaneos+"' de la tabla '"+self.tf+"'."
+
+# Excepción por violación de clave primaria foranea (valores no existentes)
+class IdentifierIsNotAllowException(SemanticException):
+    # Constructor
+    def __init__(self, tabla, atributo):
+        self.t = tabla
+        self.a = atributo
+        
+    # Genera la cadena que representa a la excepción
+    def __str__(self):
+        return "Error, no se permite utilizar el identificador '"+self.a+"' sobre la tabla '"+self.t+"' para esta operacion."
+    

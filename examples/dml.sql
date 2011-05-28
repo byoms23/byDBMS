@@ -1,34 +1,58 @@
+
 USE DATABASE PRUEBAS;
 
-INSERT INTO Tabla1 VALUES (1,   'a', '2011-05-10', 1.0)
-INSERT INTO Tabla1 VALUES (1.1, 'a', '2011-05-10', 1.0)
-INSERT INTO Tabla1 VALUES (1,   'a', '2011-05-10',   1)
-INSERT INTO Tabla1 VALUES (1, 'aaa', '2011-05-10', 1.0)
+SELECT * FROM TABLA1
+DELETE FROM TABLA1
+SELECT * FROM TABLA1
 
-INSERT INTO tAbla2 (campO1, campo2, cAmPo3) VALUES 
-        (1, 1, 55)
+SELECT * FROM TABLA0
+DELETE FROM tAbLa0
+SELECT * FROM TABLA0
 
 INSERT INTO tabla0 (CAMPO1, CAMPO2) VALUES 
-        (NULL, NULL),
-        (1, NULL),
-        (1, NULL)
+        (1, 1),
+        (2, 10),
+        (3, 1),
+        (4, 10),
+        (5, 1),
+        (6, 10),
+        (7, 1),
+        (8, 10), 
+        (9, 1),
+        (10, 10),
+        (11, 1),
+        (12, 10),
+        (13, 1)
+SELECT * FROM TABLA0
+        
+INSERT INTO TABLA1 VALUES
+        (1, 'A', '2039-12-12', 3),
+        (8, 'B', '2011-10-12', 4),
+        (10, 'C', '1999-01-13', 5)
+SELECT * FROM TABLA1
 
-INSERT INTO Tabla1 VALUES (1   ,       'a', '2011-05-10', 1.0)
-INSERT INTO Tabla1 VALUES (1.1 ,       'a', '2011-05-10', 1.0)
-INSERT INTO Tabla1 VALUES (1   ,       'a', '2011-05-10',   1)
-INSERT INTO Tabla1 VALUES (1   ,     'aaa', '2011-05-10', 1.0)
-INSERT INTO Tabla1 VALUES 
-        (1, 'aaa', '2011-05-10', 1.0), 
-        (2, 'aaa', '2011-05-10', 1.0), 
-        (3, 'aaa', '2011-05-10', 1.0),
-        (4, 'aaa', '2011-05-10', 1.0),
-        (5, 'aaa', '2011-05-10', 1.0),
-        (6, 'aaa', '2011-05-10', 1.0),
-        (7, 'aaa', '2011-05-10', 1.0),
-        (8, 'aaa', '2011-05-10', 1.0),
-        (9, 'aaa', '2011-01-10', 1.0)
-;
+DELETE FROM tAbLa0 WHERE campo1 > 10;
+SELECT * FROM TABLA0
 
+UPDATE taBla0 SET campo2 = 9 WHERE CAMPO1 < 3;
+SELECT * FROM TABLA0
+SELECT * FROM TABLA0,tabla1 WHERE tabla0.CAMPO1 > 1 ;
+SELECT * FROM TABLA0 ORDER BY CAMPO1;
+SELECT * FROM TABLA0 WHERE CAMPO1 > 1 ORDER BY CAMPO1;
+SELECT * FROM TABLA0 WHERE CAMPO1 > 1 AND CAMPO1 < 5 ORDER BY CAMPO1 ASC, CAMPO2 DESC;
+SELECT * FROM TABLA0,TABLA1 ORDER BY TABLA1.CAMPO1 ASC, TABLA0.CAMPO1 DESC;
 
-INSERT INTO Tabla1 (campo1, campo2, campo3) VALUES (1, '453', '1111-11-12');
-INSERT INTO Tabla1 (campo1, campo2, campo3) VALUES (1, DEFAULT, '1523-05-16');
+SELECT campo2, tabla0.campo1, tabla0.campo1 FROM TABLA0
+
+ALTER TABLE TABLA0 ADD COLUMN CAM FLOAT
+
+SELECT * FROM TABLA0
+
+UPDATE TABLA0 SET CAM = 1 WHERE CAMPO1 > 3
+
+SELECT * FROM TABLA0 ORDER BY CAM
+SELECT * FROM TABLA0 ORDER BY CAM DESC
+
+ALTER TABLE tablA0 DROP COLUMN CAM
+SELECT * FROM TABLA0
+SELECT * FROM TABLA0 ORDER BY CAM

@@ -282,6 +282,7 @@ class BaseDeDatos():
         antiguos = [x[3] for x in tabla.getRestricciones() if x[0] == "FOREIGN KEY"]
         
         # Realizar cada una de las acciones que se solicitan
+        guardar = False
         for accion in listaAcciones:
             if accion[0] == 'ADD' and accion[1] == 'COLUMN':
                 # Agregar columna
@@ -291,11 +292,14 @@ class BaseDeDatos():
                 
                 # Agregar restricciones cortas
                 self.agregar_restriccion(clone, accion[2], mostrar = True)
+                guardar = True
             elif accion[0] == 'ADD':
                 # Agregar restriccion
                 self.agregar_restriccion(clone, accion[1], mostrar = True)
             elif accion[0] == 'DROP' and accion[1] == 'COLUMN':
                 clone.quitar_atributo(accion[2])
+                
+                guardar = True
                 
                 # Log
                 self.log.info("Tabla '"+str(clone.getNombre())+"' modificada: Se quitó la columna '"+str(accion[2])+"'.")        
@@ -310,9 +314,11 @@ class BaseDeDatos():
             #~ self.log.debug("Clone")
             #~ self.log.debug(clone.getAtributos())
             #~ self.log.debug(clone.getRestricciones())
+            #~ self.log.debug(clone.getRegistros())
             #~ self.log.debug("Tabla")
             #~ self.log.debug(tabla.getAtributos())
             #~ self.log.debug(tabla.getRestricciones())
+            #~ self.log.debug(tabla.getRegistros())
                 
         # Eliminar base de datos del manejador
         self.tablas.remove(tabla)
@@ -337,6 +343,9 @@ class BaseDeDatos():
         # Renombrar en el archivo de metadatos
         clone.setNombre(tabla.getNombre())
         self.reemplazar_tabla_metadatos(tabla, clone)
+        # Guardar en disco
+        if guardar == True:
+            clone.guardar_registros()
         
     # Eliminar la tabla descrita por tabla
     def eliminar_tabla(self, tabla):
@@ -589,3 +598,47 @@ class BaseDeDatos():
         # Verificar que la tabla exista
         return self.verificar_tabla(tabla).eliminar_registros(condicion)
       
+    # Selecconar registros de las tablas indicadas
+    def seleccionar_registros(self, columnas, tablas, condicion, ordenador):
+        # Crear tabla contenedora
+        temp = Tabla('SELECT', self)
+        temp.setRegistros([Registro(temp)])
+        tblSet = set()
+        for tbl in tablas:
+            if not tbl in tblSet:
+                tbl = tbl.lower()
+                tabla = self.verificar_tabla(tbl)
+                temp.producto_cartesiano(tabla)
+                tblSet.add(tbl)
+                
+        # Evaluar condicion
+        # Verificar que sea válida
+        if condicion != None:
+            temp.verificar_condicion(condicion[1])
+            temp.evaluar_condicion(condicion[1])
+        
+        # Ordenar
+        if ordenador != None:
+            for i in xrange(len(ordenador[1]) -1, -1, -1):
+                orden = ordenador[1][i]
+                
+                # Validar orden
+                temp.verificar_condicion(orden[0])
+                tipoOrden = "ASC" if len(orden) < 2 else str(orden[1])
+                
+                # Ordenar
+                temp.ordenar_registros(orden[0], tipoOrden)
+                
+        
+        # Filtrar por columnas seleccionadas
+        if columnas[0] != '*':
+            mostrar_columnas = [temp.verificar_columna(columna) for columna in columnas]
+        else: 
+            mostrar_columnas = None
+                
+        resp = temp.toString(mostrar_columnas)
+            
+        # Regresar respuesta
+        self.log.info('\n' + str(resp) + "\n\nSe han seleccionado '%.i' registros" % temp.getCantidadRegistros())
+        
+        

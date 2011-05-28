@@ -205,8 +205,15 @@ def verificacion(ast):
     elif type(ast) == RowSelect:
         log.debug('Se detectó una consulta SQL: Seleccionar registros.')
         
-        
-        #r = manejador.eliminar_registros_de_tabla(ast[0].lower(),condicion)
+        condicion = None
+        ordenador = None
+        for nodo in ast[2:]:
+            if nodo[0] == 'ORDER':
+                ordenador = nodo
+            elif nodo[0] == 'WHERE':
+                condicion = nodo
+                
+        r = manejador.seleccionar_registros(ast[0],ast[1], condicion, ordenador)
         
     # Devolver el resultado
     return r
